@@ -8,44 +8,44 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../lib/HealthcheckReport.php';
 require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
-function reportDatenschutz(array $raw, array $config): HealthcheckReport
+function reportPrivacy(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
-    $cfg = $daten['konfiguration'] ?? [];
+    $daten = $raw['data'] ?? [];
+    $cfg = $daten['config'] ?? [];
 
-    if ($cfg['pruefe_personen'] ?? true) {
-        bewerteInaktivePersonen($report, $daten['personen'] ?? []);
-        bewerteAelteresPersonendaten($report, $daten['inaktive_stichprobe'] ?? []);
+    if ($cfg['check_persons'] ?? true) {
+        bewerteInaktivePersonen($report, $daten['persons'] ?? []);
+        bewerteAelteresPersonendaten($report, $daten['inactive_sample'] ?? []);
     }
     bewerteDisabledUsers($report, $daten['disabled_users'] ?? []);
-    bewerteDatenschutzRichtlinien($report, $daten['personen'] ?? [], $daten['audit_regeln'] ?? []);
+    bewerteDatenschutzRichtlinien($report, $daten['persons'] ?? [], $daten['audit_rules'] ?? []);
 
     return $report;
 }
 
 function bewerteInaktivePersonen(HealthcheckReport $report, array $personen): void
 {
-    if (($personen['fehler'] ?? null) !== null) {
+    if (($personen['error'] ?? null) !== null) {
         $report->addFinding(
-            'datenschutz',
+            'privacy',
             'Personen-Analyse fehlgeschlagen',
             'warning',
-            'Fehler bei der Analyse der Personen: ' . $personen['fehler']
+            'Fehler bei der Analyse der Personen: ' . $personen['error']
         );
         return;
     }
 
     $total = (int) ($personen['total'] ?? 0);
-    $aktiv = (int) ($personen['aktiv'] ?? 0);
-    $inaktiv = (int) ($personen['inaktiv'] ?? 0);
-    $obsolet = $personen['obsolet'] !== null ? (int) $personen['obsolet'] : 0;
+    $aktiv = (int) ($personen['active'] ?? 0);
+    $inaktiv = (int) ($personen['inactive'] ?? 0);
+    $obsolet = $personen['obsolete'] !== null ? (int) $personen['obsolete'] : 0;
 
     $report->setCategorySummary(
-        'datenschutz',
+        'privacy',
         "$total Personen gesamt: $aktiv aktiv, $inaktiv inaktiv, $obsolet obsolet."
     );
 
@@ -64,7 +64,7 @@ function bewerteInaktivePersonen(HealthcheckReport $report, array $personen): vo
     }
 
     $report->addFinding(
-        'datenschutz',
+        'privacy',
         "Personen-Übersicht ($total)",
         $severity,
         $inaktiv > 0
@@ -77,12 +77,12 @@ function bewerteInaktivePersonen(HealthcheckReport $report, array $personen): vo
 
 function bewerteAelteresPersonendaten(HealthcheckReport $report, array $stichprobe): void
 {
-    if (($stichprobe['fehler'] ?? null) !== null) {
+    if (($stichprobe['error'] ?? null) !== null) {
         $report->addFinding(
-            'datenschutz',
+            'privacy',
             'Älteste Personendaten nicht ermittelbar',
             'info',
-            'Die ältesten Personendaten konnten nicht ermittelt werden: ' . $stichprobe['fehler']
+            'Die ältesten Personendaten konnten nicht ermittelt werden: ' . $stichprobe['error']
         );
         return;
     }
@@ -90,7 +90,7 @@ function bewerteAelteresPersonendaten(HealthcheckReport $report, array $stichpro
     $items = $stichprobe['items'] ?? [];
     if (empty($items)) {
         $report->addFinding(
-            'datenschutz',
+            'privacy',
             'Keine inaktiven Personendaten',
             'ok',
             'Es gibt keine Personen mit Status "inaktiv" in der Datenbank.'
@@ -119,7 +119,7 @@ function bewerteAelteresPersonendaten(HealthcheckReport $report, array $stichpro
     $severity = $count > 10 ? 'warning' : 'info';
 
     $report->addFinding(
-        'datenschutz',
+        'privacy',
         "Inaktive Personen (Stichprobe: $count)",
         $severity,
         "Stichprobe von $count inaktiven Personen. Prüfen Sie, ob für diese Datensätze noch "
@@ -130,12 +130,12 @@ function bewerteAelteresPersonendaten(HealthcheckReport $report, array $stichpro
 
 function bewerteDisabledUsers(HealthcheckReport $report, array $users): void
 {
-    if (($users['fehler'] ?? null) !== null) {
+    if (($users['error'] ?? null) !== null) {
         $report->addFinding(
-            'datenschutz',
+            'privacy',
             'User-Account-Analyse fehlgeschlagen',
             'info',
-            'Fehler beim Abruf der User-Accounts: ' . $users['fehler']
+            'Fehler beim Abruf der User-Accounts: ' . $users['error']
         );
         return;
     }
@@ -143,7 +143,7 @@ function bewerteDisabledUsers(HealthcheckReport $report, array $users): void
     $count = (int) ($users['count'] ?? 0);
     if ($count === 0) {
         $report->addFinding(
-            'datenschutz',
+            'privacy',
             'Keine deaktivierten User-Accounts',
             'ok',
             'Es gibt keine deaktivierten User-Accounts.'
@@ -162,7 +162,7 @@ function bewerteDisabledUsers(HealthcheckReport $report, array $users): void
 
     $severity = $count > 20 ? 'warning' : 'info';
     $report->addFinding(
-        'datenschutz',
+        'privacy',
         "Deaktivierte User-Accounts ($count)",
         $severity,
         "$count deaktivierte User-Accounts vorhanden. "
@@ -177,14 +177,14 @@ function bewerteDatenschutzRichtlinien(HealthcheckReport $report, array $persone
     $pruefungen = [];
     $fehlend = 0;
 
-    if (($personen['obsolet_fehler'] ?? null) !== null) {
+    if (($personen['obsolete_error'] ?? null) !== null) {
         $pruefungen[] = [
             'Richtlinie' => 'Obsolescence für Personen',
             'Status'     => 'Nicht prüfbar',
             'Empfehlung' => 'Manuell prüfen',
         ];
     } else {
-        $obsolet = (int) ($personen['obsolet'] ?? 0);
+        $obsolet = (int) ($personen['obsolete'] ?? 0);
         $pruefungen[] = [
             'Richtlinie' => 'Obsolescence für Personen',
             'Status'     => $obsolet > 0 ? 'Aktiv genutzt' : 'Nicht genutzt',
@@ -197,7 +197,7 @@ function bewerteDatenschutzRichtlinien(HealthcheckReport $report, array $persone
         }
     }
 
-    if (($audit['fehler'] ?? null) === null) {
+    if (($audit['error'] ?? null) === null) {
         $datenschutzRegel = false;
         foreach ($audit['items'] ?? [] as $r) {
             $name = strtolower($r['name'] ?? '');
@@ -235,7 +235,7 @@ function bewerteDatenschutzRichtlinien(HealthcheckReport $report, array $persone
     $severity = $fehlend >= 2 ? 'warning' : 'info';
 
     $report->addFinding(
-        'datenschutz',
+        'privacy',
         'Datenschutz-Richtlinien',
         $severity,
         $fehlend > 0
@@ -249,16 +249,16 @@ function bewerteDatenschutzRichtlinien(HealthcheckReport $report, array $persone
 if (php_sapi_name() === 'cli' && isset($argv[0]) && realpath($argv[0]) === realpath(__FILE__)) {
     try {
         $config = HealthcheckUtils::loadConfig(HealthcheckUtils::parseConfigOption());
-        $rawPath = HealthcheckUtils::parseRawOption() ?? HealthcheckUtils::latestRawJson($config, 'datenschutz');
+        $rawPath = HealthcheckUtils::parseRawOption() ?? HealthcheckUtils::latestRawJson($config, 'privacy');
         if ($rawPath === null) {
-            throw new \RuntimeException('Keine Rohdaten für Modul "datenschutz" gefunden. Bitte zuerst datenschutz-collector.php ausführen.');
+            throw new \RuntimeException('Keine Rohdaten für Modul "privacy" gefunden. Bitte zuerst privacy-collector.php ausführen.');
         }
         HealthcheckUtils::log("Lese Rohdaten: $rawPath", 'info');
         $raw = HealthcheckUtils::loadRawJson($rawPath);
-        $report = reportDatenschutz($raw, $config);
+        $report = reportPrivacy($raw, $config);
         $ts = HealthcheckUtils::timestamp();
-        HealthcheckUtils::saveFile(HealthcheckUtils::reportPath($config, 'datenschutz', $ts, 'html'), $report->toHtml());
-        HealthcheckUtils::saveJson(HealthcheckUtils::reportPath($config, 'datenschutz', $ts, 'json'), json_decode($report->toJson(), true));
+        HealthcheckUtils::saveFile(HealthcheckUtils::reportPath($config, 'privacy', $ts, 'html'), $report->toHtml());
+        HealthcheckUtils::saveJson(HealthcheckUtils::reportPath($config, 'privacy', $ts, 'json'), json_decode($report->toJson(), true));
         HealthcheckUtils::log('Report geschrieben.', 'success');
     } catch (\Exception $e) {
         HealthcheckUtils::log($e->getMessage(), 'error');

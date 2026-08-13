@@ -170,9 +170,9 @@ class ReportPipeline
     private function countFindings(\HealthcheckReport $report, string $category): int
     {
         $data = json_decode($report->toJson(), true);
-        $befunde = $data['ergebnis'][$category]['befunde'] ?? [];
+        $findings = $data['results'][$category]['findings'] ?? [];
 
-        return count($befunde);
+        return count($findings);
     }
 
     private function toAmpel(string $severity): string

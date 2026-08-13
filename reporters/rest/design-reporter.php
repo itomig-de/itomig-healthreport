@@ -19,29 +19,29 @@ require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 /**
  * Bewertet die Design-Rohdaten und liefert einen HealthcheckReport zurück.
  *
- * @param array $raw    Rohdaten-Array (meta + daten) wie vom Collector erzeugt
+ * @param array $raw    Rohdaten-Array (meta + data) wie vom Collector erzeugt
  * @param array $config Aktuelle Healthcheck-Config (für Schwellwerte)
  */
 function reportDesign(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
-    $inventar = $daten['klassen_inventar'] ?? [];
-    $optionale = $daten['optionale_klassen'] ?? [];
-    $sprachen = $daten['konfiguration']['sprachen'] ?? [];
+    $daten = $raw['data'] ?? [];
+    $inventar = $daten['class_inventory'] ?? [];
+    $optionale = $daten['optional_classes'] ?? [];
+    $sprachen = $daten['config']['languages'] ?? [];
 
     bewerteKlassenInventar($report, $inventar);
     bewerteEnumWerte($report);
     bewerteOptionaleKlassen($report, $optionale);
     bewerteUebersetzungen($report, $sprachen);
 
-    foreach ($inventar['fehler'] ?? [] as $f) {
+    foreach ($inventar['error'] ?? [] as $f) {
         $report->addFinding(
             'design',
-            'Klasse nicht abrufbar: ' . $f['klasse'],
+            'Klasse nicht abrufbar: ' . $f['class'],
             'warning',
             'Beim Abruf der Klasse trat ein Fehler auf: ' . $f['message']
         );
@@ -52,8 +52,8 @@ function reportDesign(array $raw, array $config): HealthcheckReport
 
 function bewerteKlassenInventar(HealthcheckReport $report, array $inventar): void
 {
-    $mit = $inventar['mit_instanzen'] ?? [];
-    $ohne = $inventar['ohne_instanzen'] ?? [];
+    $mit = $inventar['with_instances'] ?? [];
+    $ohne = $inventar['without_instances'] ?? [];
 
     $totalMit = count($mit);
     $totalOhne = count($ohne);
@@ -106,13 +106,13 @@ function bewerteOptionaleKlassen(HealthcheckReport $report, array $optionale): v
 {
     $ungenutzt = [];
     foreach ($optionale as $klasse => $info) {
-        if ($info['fehler'] !== null) {
+        if ($info['error'] !== null) {
             continue;
         }
         if (($info['count'] ?? 0) === 0) {
             $ungenutzt[] = [
                 'Klasse'       => $klasse,
-                'Beschreibung' => $info['beschreibung'] ?? '',
+                'Beschreibung' => $info['description'] ?? '',
             ];
         }
     }

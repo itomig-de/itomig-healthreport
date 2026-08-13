@@ -2,7 +2,7 @@
 /**
  * ITOMIG Healthcheck - Reporter: Daten-Analyse
  *
- * Bewertet die vom daten-collector erfassten Rohdaten.
+ * Bewertet die vom data-collector erfassten Rohdaten.
  */
 
 declare(strict_types=1);
@@ -10,17 +10,17 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../lib/HealthcheckReport.php';
 require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
-function reportDaten(array $raw, array $config): HealthcheckReport
+function reportData(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
+    $daten = $raw['data'] ?? [];
 
-    bewerteObjektStatus($report, $daten['objekt_status'] ?? []);
-    bewerteAuditRegeln($report, $daten['audit_regeln'] ?? []);
-    bewerteBefuellung($report, $daten['befuellung'] ?? []);
+    bewerteObjektStatus($report, $daten['object_status'] ?? []);
+    bewerteAuditRegeln($report, $daten['audit_rules'] ?? []);
+    bewerteBefuellung($report, $daten['data_completeness'] ?? []);
     bewerteObsolescence($report, $daten['obsolescence'] ?? []);
     bewerteArchiv($report);
 
@@ -36,14 +36,14 @@ function bewerteObjektStatus(HealthcheckReport $report, array $status): void
         if (($info['total'] ?? 0) === 0) {
             continue;
         }
-        if ($info['aktiv'] !== null) {
+        if ($info['active'] !== null) {
             $rows[] = [
                 'Klasse'                => $klasse,
                 'Gesamt'                => (string) $info['total'],
-                'Aktiv (nicht obsolet)' => (string) $info['aktiv'],
-                'Obsolet'               => (string) $info['obsolet'],
+                'Aktiv (nicht obsolet)' => (string) $info['active'],
+                'Obsolet'               => (string) $info['obsolete'],
             ];
-            $totalObsolet += (int) $info['obsolet'];
+            $totalObsolet += (int) $info['obsolete'];
         } else {
             $rows[] = [
                 'Klasse'  => $klasse,
@@ -66,7 +66,7 @@ function bewerteObjektStatus(HealthcheckReport $report, array $status): void
     }
 
     $report->addFinding(
-        'daten',
+        'data',
         'Objekt-Status Übersicht',
         $severity,
         "Analyse des Aktiv/Obsolet-Verhältnisses der wichtigsten Klassen. $totalObsolet Objekte sind als obsolet markiert.",
@@ -76,22 +76,22 @@ function bewerteObjektStatus(HealthcheckReport $report, array $status): void
 
 function bewerteAuditRegeln(HealthcheckReport $report, array $audit): void
 {
-    if (($audit['fehler'] ?? null) !== null) {
+    if (($audit['error'] ?? null) !== null) {
         $report->addFinding(
-            'daten',
+            'data',
             'Audit-Regeln konnten nicht geprüft werden',
             'warning',
-            'Fehler beim Abruf der Audit-Regeln: ' . $audit['fehler']
+            'Fehler beim Abruf der Audit-Regeln: ' . $audit['error']
         );
         return;
     }
 
-    $regeln = $audit['regeln'] ?? [];
+    $regeln = $audit['rules'] ?? [];
     $ruleCount = count($regeln);
 
     if ($ruleCount === 0) {
         $report->addFinding(
-            'daten',
+            'data',
             'Keine Audit-Regeln definiert',
             'warning',
             'Es sind keine Audit-Regeln in der iTop-Instanz definiert. '
@@ -114,9 +114,9 @@ function bewerteAuditRegeln(HealthcheckReport $report, array $audit): void
         ];
     }
 
-    $categoryCount = (int) ($audit['kategorien_anzahl'] ?? 0);
+    $categoryCount = (int) ($audit['category_count'] ?? 0);
     $report->setCategorySummary(
-        'daten',
+        'data',
         "$categoryCount Audit-Kategorien und $ruleCount Audit-Regeln gefunden ($aktiv aktiv, $inaktiv inaktiv)."
     );
 
@@ -129,7 +129,7 @@ function bewerteAuditRegeln(HealthcheckReport $report, array $audit): void
     }
 
     $report->addFinding(
-        'daten',
+        'data',
         "Audit-Regeln ($ruleCount definiert)",
         $severity,
         "$aktiv von $ruleCount Audit-Regeln sind aktiv. "
@@ -144,24 +144,24 @@ function bewerteBefuellung(HealthcheckReport $report, array $befuellung): void
 {
     $auffaellig = [];
     foreach ($befuellung as $b) {
-        if (($b['fehler'] ?? null) !== null) {
+        if (($b['error'] ?? null) !== null) {
             continue;
         }
         $total = (int) ($b['total'] ?? 0);
-        $betroffen = $b['betroffen'];
+        $betroffen = $b['affected'];
         if ($betroffen === null || $betroffen === 0) {
             continue;
         }
         $prozent = $total > 0 ? round(($betroffen / $total) * 100, 1) : 0;
         $auffaellig[] = [
-            'Prüfung'   => $b['beschreibung'] ?? '',
+            'Prüfung'   => $b['description'] ?? '',
             'Betroffen' => "$betroffen von $total ({$prozent}%)",
         ];
     }
 
     if (empty($auffaellig)) {
         $report->addFinding(
-            'daten',
+            'data',
             'Befüllungsgrad in Ordnung',
             'ok',
             'Keine Auffälligkeiten beim Befüllungsgrad der geprüften Felder gefunden.'
@@ -171,7 +171,7 @@ function bewerteBefuellung(HealthcheckReport $report, array $befuellung): void
 
     $severity = count($auffaellig) > 2 ? 'warning' : 'info';
     $report->addFinding(
-        'daten',
+        'data',
         'Befüllungsgrad-Analyse',
         $severity,
         count($auffaellig) . ' Auffälligkeiten beim Befüllungsgrad gefunden.',
@@ -187,17 +187,17 @@ function bewerteObsolescence(HealthcheckReport $report, array $obs): void
         if (($info['total'] ?? 0) === 0) {
             continue;
         }
-        if (($info['obsolet'] ?? null) === null) {
+        if (($info['obsolete'] ?? null) === null) {
             continue;
         }
-        $prozent = $info['total'] > 0 ? round(($info['obsolet'] / $info['total']) * 100, 1) : 0;
-        if ($info['obsolet'] > 0) {
+        $prozent = $info['total'] > 0 ? round(($info['obsolete'] / $info['total']) * 100, 1) : 0;
+        if ($info['obsolete'] > 0) {
             $genutzt = true;
         }
         $rows[] = [
             'Klasse'  => $klasse,
             'Gesamt'  => (string) $info['total'],
-            'Obsolet' => "{$info['obsolet']} ({$prozent}%)",
+            'Obsolet' => "{$info['obsolete']} ({$prozent}%)",
         ];
     }
 
@@ -207,7 +207,7 @@ function bewerteObsolescence(HealthcheckReport $report, array $obs): void
 
     if (!$genutzt) {
         $report->addFinding(
-            'daten',
+            'data',
             'Obsolescence wird nicht genutzt',
             'warning',
             'In keiner der geprüften Klassen sind Objekte als obsolet markiert. '
@@ -218,7 +218,7 @@ function bewerteObsolescence(HealthcheckReport $report, array $obs): void
         );
     } else {
         $report->addFinding(
-            'daten',
+            'data',
             'Obsolescence-Nutzung',
             'ok',
             'Obsolescence-Flags werden aktiv genutzt.',
@@ -230,7 +230,7 @@ function bewerteObsolescence(HealthcheckReport $report, array $obs): void
 function bewerteArchiv(HealthcheckReport $report): void
 {
     $report->addFinding(
-        'daten',
+        'data',
         'Archiv-Modus Prüfung',
         'info',
         'Der Archiv-Modus kann über die REST API nur eingeschränkt geprüft werden. '
@@ -244,16 +244,16 @@ function bewerteArchiv(HealthcheckReport $report): void
 if (php_sapi_name() === 'cli' && isset($argv[0]) && realpath($argv[0]) === realpath(__FILE__)) {
     try {
         $config = HealthcheckUtils::loadConfig(HealthcheckUtils::parseConfigOption());
-        $rawPath = HealthcheckUtils::parseRawOption() ?? HealthcheckUtils::latestRawJson($config, 'daten');
+        $rawPath = HealthcheckUtils::parseRawOption() ?? HealthcheckUtils::latestRawJson($config, 'data');
         if ($rawPath === null) {
-            throw new \RuntimeException('Keine Rohdaten für Modul "daten" gefunden. Bitte zuerst daten-collector.php ausführen.');
+            throw new \RuntimeException('Keine Rohdaten für Modul "data" gefunden. Bitte zuerst data-collector.php ausführen.');
         }
         HealthcheckUtils::log("Lese Rohdaten: $rawPath", 'info');
         $raw = HealthcheckUtils::loadRawJson($rawPath);
-        $report = reportDaten($raw, $config);
+        $report = reportData($raw, $config);
         $ts = HealthcheckUtils::timestamp();
-        $htmlPath = HealthcheckUtils::reportPath($config, 'daten', $ts, 'html');
-        $jsonPath = HealthcheckUtils::reportPath($config, 'daten', $ts, 'json');
+        $htmlPath = HealthcheckUtils::reportPath($config, 'data', $ts, 'html');
+        $jsonPath = HealthcheckUtils::reportPath($config, 'data', $ts, 'json');
         HealthcheckUtils::saveFile($htmlPath, $report->toHtml());
         HealthcheckUtils::saveJson($jsonPath, json_decode($report->toJson(), true));
         HealthcheckUtils::log("HTML-Report: $htmlPath", 'success');

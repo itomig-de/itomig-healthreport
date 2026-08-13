@@ -28,23 +28,23 @@ class HealthcheckModules
         return [
             'design' => [
                 'tier'          => 'rest',
-                'flag'          => 'design_analyse',
+                'flag'          => 'design_analysis',
                 'label'         => 'Design-Analyse',
                 'category'      => 'design',
                 'reporter_file' => $root . '/reporters/rest/design-reporter.php',
                 'reporter_fn'   => 'reportDesign',
             ],
-            'daten' => [
+            'data' => [
                 'tier'          => 'rest',
-                'flag'          => 'daten_analyse',
+                'flag'          => 'data_analysis',
                 'label'         => 'Daten-Analyse',
-                'category'      => 'daten',
-                'reporter_file' => $root . '/reporters/rest/daten-reporter.php',
-                'reporter_fn'   => 'reportDaten',
+                'category'      => 'data',
+                'reporter_file' => $root . '/reporters/rest/data-reporter.php',
+                'reporter_fn'   => 'reportData',
             ],
             'synchro' => [
                 'tier'          => 'rest',
-                'flag'          => 'synchro_analyse',
+                'flag'          => 'synchro_analysis',
                 'label'         => 'Synchro-Analyse',
                 'category'      => 'synchro',
                 'reporter_file' => $root . '/reporters/rest/synchro-reporter.php',
@@ -52,7 +52,7 @@ class HealthcheckModules
             ],
             'integration' => [
                 'tier'          => 'rest',
-                'flag'          => 'integration_analyse',
+                'flag'          => 'integration_analysis',
                 'label'         => 'Integration & Benachrichtigung',
                 'category'      => 'integration',
                 'reporter_file' => $root . '/reporters/rest/integration-reporter.php',
@@ -60,43 +60,43 @@ class HealthcheckModules
             ],
             'system' => [
                 'tier'          => 'rest',
-                'flag'          => 'system_analyse',
+                'flag'          => 'system_analysis',
                 'label'         => 'System-Analyse',
                 'category'      => 'system',
                 'reporter_file' => $root . '/reporters/rest/system-reporter.php',
                 'reporter_fn'   => 'reportSystem',
             ],
-            'datenschutz' => [
+            'privacy' => [
                 'tier'          => 'rest',
-                'flag'          => 'datenschutz_analyse',
+                'flag'          => 'privacy_analysis',
                 'label'         => 'Datenschutz-Analyse',
-                'category'      => 'datenschutz',
-                'reporter_file' => $root . '/reporters/rest/datenschutz-reporter.php',
-                'reporter_fn'   => 'reportDatenschutz',
+                'category'      => 'privacy',
+                'reporter_file' => $root . '/reporters/rest/privacy-reporter.php',
+                'reporter_fn'   => 'reportPrivacy',
             ],
-            'tabellen-uebersicht' => [
+            'table-overview' => [
                 'tier'          => 'db',
-                'flag'          => 'tabellen_uebersicht',
+                'flag'          => 'table_overview',
                 'label'         => 'DB: Tabellen-Übersicht',
-                'category'      => 'tabellen',
-                'reporter_file' => $root . '/reporters/db/tabellen-uebersicht-reporter.php',
-                'reporter_fn'   => 'reportTabellenUebersicht',
+                'category'      => 'tables',
+                'reporter_file' => $root . '/reporters/db/table-overview-reporter.php',
+                'reporter_fn'   => 'reportTableOverview',
             ],
-            'spalten-befuellung' => [
+            'column-fill' => [
                 'tier'          => 'db',
-                'flag'          => 'spalten_befuellung',
+                'flag'          => 'column_fill',
                 'label'         => 'DB: Spalten-Befüllung',
-                'category'      => 'befuellung',
-                'reporter_file' => $root . '/reporters/db/spalten-befuellung-reporter.php',
-                'reporter_fn'   => 'reportSpaltenBefuellung',
+                'category'      => 'columns',
+                'reporter_file' => $root . '/reporters/db/column-fill-reporter.php',
+                'reporter_fn'   => 'reportColumnFill',
             ],
-            'objekt-aktualitaet' => [
+            'object-freshness' => [
                 'tier'          => 'db',
-                'flag'          => 'objekt_aktualitaet',
+                'flag'          => 'object_freshness',
                 'label'         => 'DB: Objekt-Aktualität',
-                'category'      => 'aktualitaet',
-                'reporter_file' => $root . '/reporters/db/objekt-aktualitaet-reporter.php',
-                'reporter_fn'   => 'reportObjektAktualitaet',
+                'category'      => 'freshness',
+                'reporter_file' => $root . '/reporters/db/object-freshness-reporter.php',
+                'reporter_fn'   => 'reportObjectFreshness',
             ],
         ];
     }
@@ -133,20 +133,20 @@ class HealthcheckModules
     public static function mergeReport(HealthcheckReport $gesamt, HealthcheckReport $modul, string $category): void
     {
         $data = json_decode($modul->toJson(), true);
-        if (!isset($data['ergebnis'][$category])) {
+        if (!isset($data['results'][$category])) {
             return;
         }
-        $catData = $data['ergebnis'][$category];
+        $catData = $data['results'][$category];
 
-        if (!empty($catData['zusammenfassung'])) {
+        if (!empty($catData['summary'])) {
             $gesamt->setCategorySummary(
                 $category,
-                $catData['zusammenfassung']['text'] ?? '',
-                $catData['zusammenfassung']['stats'] ?? []
+                $catData['summary']['text'] ?? '',
+                $catData['summary']['stats'] ?? []
             );
         }
 
-        foreach ($catData['befunde'] ?? [] as $finding) {
+        foreach ($catData['findings'] ?? [] as $finding) {
             $gesamt->addFinding(
                 $category,
                 $finding['title'],

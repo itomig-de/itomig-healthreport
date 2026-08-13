@@ -2,7 +2,7 @@
 /**
  * ITOMIG Healthcheck - Reporter: DB-Tabellen-Übersicht
  *
- * Erzeugt HealthcheckReport mit Findings in der Kategorie 'tabellen'.
+ * Erzeugt HealthcheckReport mit Findings in der Kategorie 'tables'.
  */
 
 declare(strict_types=1);
@@ -10,22 +10,22 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../lib/HealthcheckReport.php';
 require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
-function reportTabellenUebersicht(array $raw, array $config): HealthcheckReport
+function reportTableOverview(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
-    $tabellen = $daten['tabellen'] ?? [];
-    $gesamt = (int) ($daten['gesamt_datensaetze'] ?? 0);
-    $exclude = $daten['konfiguration']['exclude_prefixes'] ?? [];
+    $daten = $raw['data'] ?? [];
+    $tabellen = $daten['tables'] ?? [];
+    $gesamt = (int) ($daten['total_rows'] ?? 0);
+    $exclude = $daten['config']['exclude_prefixes'] ?? [];
 
-    $mitDaten = array_values(array_filter($tabellen, fn(array $t) => $t['datensaetze'] > 0));
-    $leer = array_values(array_filter($tabellen, fn(array $t) => $t['datensaetze'] === 0));
+    $mitDaten = array_values(array_filter($tabellen, fn(array $t) => $t['rows'] > 0));
+    $leer = array_values(array_filter($tabellen, fn(array $t) => $t['rows'] === 0));
 
     $report->setCategorySummary(
-        'tabellen',
+        'tables',
         sprintf(
             '%d Tabellen, %s Datensätze gesamt, %d mit Daten, %d leer.',
             count($tabellen),
@@ -47,12 +47,12 @@ function reportTabellenUebersicht(array $raw, array $config): HealthcheckReport
     foreach ($top as $i => $row) {
         $details[] = [
             '#'           => (string) ($i + 1),
-            'Tabelle'     => $row['tabelle'],
-            'Datensätze'  => number_format($row['datensaetze'], 0, ',', '.'),
+            'Tabelle'     => $row['table'],
+            'Datensätze'  => number_format($row['rows'], 0, ',', '.'),
         ];
     }
     $report->addFinding(
-        'tabellen',
+        'tables',
         'Top-30-Tabellen nach Datensätzen',
         'info',
         'Die 30 größten Tabellen der iTop-Datenbank.',
@@ -63,18 +63,18 @@ function reportTabellenUebersicht(array $raw, array $config): HealthcheckReport
     if (!empty($leer)) {
         $severity = count($leer) > 50 ? 'warning' : 'info';
         $report->addFinding(
-            'tabellen',
+            'tables',
             sprintf('Leere Tabellen (%d)', count($leer)),
             $severity,
             sprintf(
                 '%d Tabellen enthalten keine Datensätze. Das kann auf nicht genutzte Module oder Klassen hinweisen.',
                 count($leer)
             ),
-            array_map(fn(array $t) => $t['tabelle'], $leer)
+            array_map(fn(array $t) => $t['table'], $leer)
         );
     } else {
         $report->addFinding(
-            'tabellen',
+            'tables',
             'Keine leeren Tabellen',
             'ok',
             'Alle ermittelten Tabellen enthalten Datensätze.'
@@ -84,7 +84,7 @@ function reportTabellenUebersicht(array $raw, array $config): HealthcheckReport
     // Filter-Hinweis
     if (!empty($exclude)) {
         $report->addFinding(
-            'tabellen',
+            'tables',
             'Filter-Hinweis',
             'info',
             'Folgende Tabellen-Präfixe wurden ausgeschlossen: ' . implode(', ', array_map(fn(string $p) => $p . '*', $exclude))
@@ -97,16 +97,16 @@ function reportTabellenUebersicht(array $raw, array $config): HealthcheckReport
 if (php_sapi_name() === 'cli' && isset($argv[0]) && realpath($argv[0]) === realpath(__FILE__)) {
     try {
         $config = HealthcheckUtils::loadConfig(HealthcheckUtils::parseConfigOption());
-        $rawPath = HealthcheckUtils::parseRawOption() ?? HealthcheckUtils::latestRawJson($config, 'tabellen-uebersicht');
+        $rawPath = HealthcheckUtils::parseRawOption() ?? HealthcheckUtils::latestRawJson($config, 'table-overview');
         if ($rawPath === null) {
-            throw new \RuntimeException('Keine Rohdaten für Modul "tabellen-uebersicht" gefunden.');
+            throw new \RuntimeException('Keine Rohdaten für Modul "table-overview" gefunden.');
         }
         HealthcheckUtils::log("Lese Rohdaten: $rawPath", 'info');
         $raw = HealthcheckUtils::loadRawJson($rawPath);
-        $report = reportTabellenUebersicht($raw, $config);
+        $report = reportTableOverview($raw, $config);
         $ts = HealthcheckUtils::timestamp();
-        HealthcheckUtils::saveFile(HealthcheckUtils::reportPath($config, 'tabellen-uebersicht', $ts, 'html'), $report->toHtml());
-        HealthcheckUtils::saveJson(HealthcheckUtils::reportPath($config, 'tabellen-uebersicht', $ts, 'json'), json_decode($report->toJson(), true));
+        HealthcheckUtils::saveFile(HealthcheckUtils::reportPath($config, 'table-overview', $ts, 'html'), $report->toHtml());
+        HealthcheckUtils::saveJson(HealthcheckUtils::reportPath($config, 'table-overview', $ts, 'json'), json_decode($report->toJson(), true));
         HealthcheckUtils::log('Report geschrieben.', 'success');
     } catch (\Exception $e) {
         HealthcheckUtils::log($e->getMessage(), 'error');

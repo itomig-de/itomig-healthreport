@@ -10,20 +10,20 @@ require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
 function reportSystem(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
-    $cfg = $daten['konfiguration'] ?? [];
+    $daten = $raw['data'] ?? [];
+    $cfg = $daten['config'] ?? [];
 
     bewerteItopVersion($report, $daten['itop_version'] ?? null);
-    bewerteModulInstallationen($report, $daten['modul_installations'] ?? []);
-    if ($cfg['pruefe_php_config'] ?? true) {
+    bewerteModulInstallationen($report, $daten['module_installations'] ?? []);
+    if ($cfg['check_php_config'] ?? true) {
         bewertePhpKonfiguration($report);
     }
-    if ($cfg['pruefe_db'] ?? true) {
-        bewerteDatenbankUebersicht($report, $daten['hauptklassen'] ?? []);
+    if ($cfg['check_db'] ?? true) {
+        bewerteDatenbankUebersicht($report, $daten['main_classes'] ?? []);
     }
 
     return $report;
@@ -78,13 +78,13 @@ function bewerteItopVersion(HealthcheckReport $report, ?string $version): void
 
 function bewerteModulInstallationen(HealthcheckReport $report, array $modules): void
 {
-    if (($modules['fehler'] ?? null) !== null) {
+    if (($modules['error'] ?? null) !== null) {
         $report->addFinding(
             'system',
             'Modul-Versionen nicht prüfbar',
             'info',
             'Die Klasse ModuleInstallation ist möglicherweise nicht über die API zugänglich: '
-            . $modules['fehler']
+            . $modules['error']
         );
         return;
     }
@@ -167,7 +167,7 @@ function bewerteDatenbankUebersicht(HealthcheckReport $report, array $hauptklass
     $details = [];
     $total = 0;
     foreach ($hauptklassen as $info) {
-        if (($info['fehler'] ?? null) !== null || ($info['count'] ?? null) === null) {
+        if (($info['error'] ?? null) !== null || ($info['count'] ?? null) === null) {
             continue;
         }
         $details[] = [

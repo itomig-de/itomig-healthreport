@@ -30,14 +30,22 @@ Die Trennung erlaubt:
 | Tier | Slug | Inhalt |
 |------|------|--------|
 | REST | `design` | Datenmodell (Klassen, Enums, Übersetzungen) |
-| REST | `daten` | Datenqualität (Audit-Regeln, Befüllung, Obsolescence) |
+| REST | `data` | Datenqualität (Audit-Regeln, Befüllung, Obsolescence) |
 | REST | `synchro` | Synchronisations-Konsistenz |
 | REST | `integration` | Benachrichtigungen, Webhooks, Mail, AI |
 | REST | `system` | iTop-Version, Module, PHP-Empfehlungen |
-| REST | `datenschutz` | DSGVO, inaktive Personen, Löschkonzepte |
-| DB | `tabellen-uebersicht` | Tabellen-Inventar |
-| DB | `spalten-befuellung` | Spalten-Befüllungsgrad |
-| DB | `objekt-aktualitaet` | Letzte Änderung pro iTop-Klasse |
+| REST | `privacy` | DSGVO, inaktive Personen, Löschkonzepte |
+| DB | `table-overview` | Tabellen-Inventar |
+| DB | `column-fill` | Spalten-Befüllungsgrad |
+| DB | `object-freshness` | Letzte Änderung pro iTop-Klasse |
+
+> **Breaking Change (JSON-Keys):** Seit Collector-Version 3.0.0 der Extension `itomig-healthcheck`
+> sind alle JSON-Keys der Modul-Dateien, des Manifests und der Findings-JSON (`toJson()`) englisch
+> (`data` statt `daten`, `customer` statt `kunde`, `results`/`findings`/`status` statt
+> `ergebnis`/`befunde`/`ampel`, u.v.m.). Diese Extension muss im Lock-Step mit der passenden
+> `itomig-healthcheck`-Version betrieben werden - es gibt keine Rückwärtskompatibilität zu
+> deutschen Keys. Vollständige Liste: `itomig-healthcheck/tools/dump-keys.php` bzw.
+> `itomig-healthcheck/docs/healthcheck-keys.csv`.
 
 ## Installation
 

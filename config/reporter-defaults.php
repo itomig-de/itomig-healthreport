@@ -22,15 +22,15 @@ return [
 
     // Welche Module beim report-all ausgewertet werden
     'module' => [
-        'design_analyse'      => true,
-        'daten_analyse'       => true,
-        'synchro_analyse'     => true,
-        'integration_analyse' => true,
-        'system_analyse'      => true,
-        'datenschutz_analyse' => true,
-        'tabellen_uebersicht' => true,
-        'spalten_befuellung'  => true,
-        'objekt_aktualitaet'  => true,
+        'design_analysis'      => true,
+        'data_analysis'        => true,
+        'synchro_analysis'     => true,
+        'integration_analysis' => true,
+        'system_analysis'      => true,
+        'privacy_analysis'     => true,
+        'table_overview'       => true,
+        'column_fill'          => true,
+        'object_freshness'     => true,
     ],
 
     // Reporter-Verhalten pro Modul (für Standard-ITOMIG-Reports)

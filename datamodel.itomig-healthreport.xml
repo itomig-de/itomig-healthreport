@@ -13,21 +13,19 @@
         <db_key_field>id</db_key_field>
         <db_final_class_field></db_final_class_field>
         <is_link>0</is_link>
+        <naming>
+          <attributes>
+            <attribute id="kunde"/>
+            <attribute id="zeitpunkt"/>
+          </attributes>
+        </naming>
+        <reconciliation>
+          <attributes>
+            <attribute id="kunde"/>
+            <attribute id="zeitpunkt"/>
+          </attributes>
+        </reconciliation>
       </properties>
-
-      <naming>
-        <attributes>
-          <attribute id="kunde"/>
-          <attribute id="zeitpunkt"/>
-        </attributes>
-      </naming>
-
-      <reconciliation>
-        <attributes>
-          <attribute id="kunde"/>
-          <attribute id="zeitpunkt"/>
-        </attributes>
-      </reconciliation>
 
       <fields>
         <field id="kunde" xsi:type="AttributeString" _delta="define">
@@ -97,6 +95,9 @@
           <edit_mode>none</edit_mode>
         </field>
       </fields>
+
+      <methods>
+      </methods>
 
       <presentation>
         <details>
@@ -173,20 +174,18 @@
         <db_key_field>id</db_key_field>
         <db_final_class_field></db_final_class_field>
         <is_link>0</is_link>
+        <naming>
+          <attributes>
+            <attribute id="label"/>
+          </attributes>
+        </naming>
+        <reconciliation>
+          <attributes>
+            <attribute id="run_id"/>
+            <attribute id="kategorie"/>
+          </attributes>
+        </reconciliation>
       </properties>
-
-      <naming>
-        <attributes>
-          <attribute id="label"/>
-        </attributes>
-      </naming>
-
-      <reconciliation>
-        <attributes>
-          <attribute id="run_id"/>
-          <attribute id="kategorie"/>
-        </attributes>
-      </reconciliation>
 
       <fields>
         <field id="run_id" xsi:type="AttributeExternalKey" _delta="define">
@@ -231,6 +230,9 @@
           <is_null_allowed>true</is_null_allowed>
         </field>
       </fields>
+
+      <methods>
+      </methods>
 
       <presentation>
         <details>

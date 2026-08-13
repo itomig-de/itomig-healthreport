@@ -2,7 +2,7 @@
 /**
  * ITOMIG Healthcheck - Reporter: DB-Spalten-Befüllung
  *
- * Bewertet Spalten-Befüllungsdaten in Kategorie 'befuellung'.
+ * Bewertet Spalten-Befüllungsdaten in Kategorie 'columns'.
  * Liefert pro Tabelle EIN Detail-Finding (Tabelle als details.rows); zusätzlich
  * eine zusammenfassende Statistik und ein Finding für komplett leere Spalten.
  */
@@ -12,15 +12,15 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../lib/HealthcheckReport.php';
 require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
-function reportSpaltenBefuellung(array $raw, array $config): HealthcheckReport
+function reportColumnFill(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
-    $tabellen = $daten['tabellen'] ?? [];
-    $leereTabellen = $daten['leere_tabellen'] ?? [];
+    $daten = $raw['data'] ?? [];
+    $tabellen = $daten['tables'] ?? [];
+    $leereTabellen = $daten['empty_tables'] ?? [];
 
     $spaltenGesamt = 0;
     $leereSpalten = 0;
@@ -28,24 +28,24 @@ function reportSpaltenBefuellung(array $raw, array $config): HealthcheckReport
     $auffaelligeSpalten = []; // Spalten mit 0% Befüllung
 
     foreach ($tabellen as $t) {
-        foreach ($t['spalten'] as $s) {
+        foreach ($t['columns'] as $s) {
             $spaltenGesamt++;
-            if ($s['prozent'] === 0.0 || $s['prozent'] === 0) {
+            if ($s['percent'] === 0.0 || $s['percent'] === 0) {
                 $leereSpalten++;
                 $auffaelligeSpalten[] = [
-                    'Tabelle' => $t['tabelle'],
-                    'Spalte'  => $s['spalte'],
-                    'Typ'     => $s['typ'],
-                    'Datensätze' => number_format($t['datensaetze'], 0, ',', '.'),
+                    'Tabelle' => $t['table'],
+                    'Spalte'  => $s['column'],
+                    'Typ'     => $s['type'],
+                    'Datensätze' => number_format($t['rows'], 0, ',', '.'),
                 ];
-            } elseif ((float) $s['prozent'] >= 100.0) {
+            } elseif ((float) $s['percent'] >= 100.0) {
                 $volleSpalten++;
             }
         }
     }
 
     $report->setCategorySummary(
-        'befuellung',
+        'columns',
         sprintf(
             '%d Tabellen analysiert, %d Spalten geprüft, %d komplett leer (0%%), %d komplett befüllt (100%%), %d leere Tabellen übersprungen.',
             count($tabellen),
@@ -68,7 +68,7 @@ function reportSpaltenBefuellung(array $raw, array $config): HealthcheckReport
         $count = count($auffaelligeSpalten);
         $severity = $count > 100 ? 'warning' : 'info';
         $report->addFinding(
-            'befuellung',
+            'columns',
             sprintf('Komplett leere Spalten (%d)', $count),
             $severity,
             sprintf(
@@ -82,26 +82,26 @@ function reportSpaltenBefuellung(array $raw, array $config): HealthcheckReport
     // Pro Tabelle ein Detail-Finding (kompakt, max. 50 Tabellen, um Report-Größe im Rahmen zu halten)
     foreach (array_slice($tabellen, 0, 50) as $t) {
         $rows = [];
-        foreach ($t['spalten'] as $s) {
+        foreach ($t['columns'] as $s) {
             $rows[] = [
-                'Spalte'         => $s['spalte'],
-                'Typ'            => $s['typ'],
-                'Befüllt'        => number_format($s['befuellt'], 0, ',', '.') . ' / ' . number_format($s['gesamt'], 0, ',', '.'),
-                'Befüllungsgrad' => number_format((float) $s['prozent'], 1, ',', '.') . '%',
+                'Spalte'         => $s['column'],
+                'Typ'            => $s['type'],
+                'Befüllt'        => number_format($s['filled'], 0, ',', '.') . ' / ' . number_format($s['total'], 0, ',', '.'),
+                'Befüllungsgrad' => number_format((float) $s['percent'], 1, ',', '.') . '%',
             ];
         }
         $report->addFinding(
-            'befuellung',
-            sprintf('%s (%s Datensätze)', $t['tabelle'], number_format($t['datensaetze'], 0, ',', '.')),
+            'columns',
+            sprintf('%s (%s Datensätze)', $t['table'], number_format($t['rows'], 0, ',', '.')),
             'info',
-            sprintf('Spalten-Befüllung der Tabelle %s.', $t['tabelle']),
+            sprintf('Spalten-Befüllung der Tabelle %s.', $t['table']),
             $rows
         );
     }
 
     if (count($tabellen) > 50) {
         $report->addFinding(
-            'befuellung',
+            'columns',
             'Weitere Tabellen',
             'info',
             sprintf(
@@ -113,7 +113,7 @@ function reportSpaltenBefuellung(array $raw, array $config): HealthcheckReport
 
     if (!empty($leereTabellen)) {
         $report->addFinding(
-            'befuellung',
+            'columns',
             sprintf('Leere Tabellen (%d)', count($leereTabellen)),
             'info',
             'Folgende Tabellen enthalten keine Datensätze und wurden für die Spalten-Analyse übersprungen:',
@@ -127,16 +127,16 @@ function reportSpaltenBefuellung(array $raw, array $config): HealthcheckReport
 if (php_sapi_name() === 'cli' && isset($argv[0]) && realpath($argv[0]) === realpath(__FILE__)) {
     try {
         $config = HealthcheckUtils::loadConfig(HealthcheckUtils::parseConfigOption());
-        $rawPath = HealthcheckUtils::parseRawOption() ?? HealthcheckUtils::latestRawJson($config, 'spalten-befuellung');
+        $rawPath = HealthcheckUtils::parseRawOption() ?? HealthcheckUtils::latestRawJson($config, 'column-fill');
         if ($rawPath === null) {
-            throw new \RuntimeException('Keine Rohdaten für Modul "spalten-befuellung" gefunden.');
+            throw new \RuntimeException('Keine Rohdaten für Modul "column-fill" gefunden.');
         }
         HealthcheckUtils::log("Lese Rohdaten: $rawPath", 'info');
         $raw = HealthcheckUtils::loadRawJson($rawPath);
-        $report = reportSpaltenBefuellung($raw, $config);
+        $report = reportColumnFill($raw, $config);
         $ts = HealthcheckUtils::timestamp();
-        HealthcheckUtils::saveFile(HealthcheckUtils::reportPath($config, 'spalten-befuellung', $ts, 'html'), $report->toHtml());
-        HealthcheckUtils::saveJson(HealthcheckUtils::reportPath($config, 'spalten-befuellung', $ts, 'json'), json_decode($report->toJson(), true));
+        HealthcheckUtils::saveFile(HealthcheckUtils::reportPath($config, 'column-fill', $ts, 'html'), $report->toHtml());
+        HealthcheckUtils::saveJson(HealthcheckUtils::reportPath($config, 'column-fill', $ts, 'json'), json_decode($report->toJson(), true));
         HealthcheckUtils::log('Report geschrieben.', 'success');
     } catch (\Exception $e) {
         HealthcheckUtils::log($e->getMessage(), 'error');

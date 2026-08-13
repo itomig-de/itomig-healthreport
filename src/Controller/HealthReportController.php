@@ -36,7 +36,10 @@ class HealthReportController extends Controller
     public function __construct($sViewPath = '', $sModuleName = 'core', $aAdditionalPaths = [])
     {
         $sModuleName = 'itomig-healthreport';
-        $sViewPath = MODULESROOT . 'itomig-healthreport/templates';
+        // Ueber __DIR__ statt MODULESROOT.'itomig-healthreport/...' aufloesen: der
+        // physische Ordnername unter extensions/ muss so nicht mit dem Modul-Code
+        // uebereinstimmen (z.B. beim Deploy als itomig-healthreport-extension).
+        $sViewPath = dirname(__DIR__, 2) . '/templates';
         parent::__construct($sViewPath, $sModuleName, $aAdditionalPaths);
 
         // Admin-only - identisches Muster zu itomig-healthcheck.
@@ -55,7 +58,7 @@ class HealthReportController extends Controller
             'sErrorMessage'  => (string) utils::ReadParam('err', '', false, 'raw_data'),
         ];
 
-        $this->m_sOperation = 'ShowForm';
+        $this->m_sOperation = 'UploadForm';
         $this->DisplayPage($aParams);
     }
 

@@ -160,7 +160,7 @@ Der CLI-Guard jeder Datei akzeptiert `--raw=<pfad>` oder nimmt automatisch die j
 
 Zentrale Definition der 9 Module mit `tier`, `flag`, `label`, `category`, `reporter_file`, `reporter_fn`. Code geht über `HealthcheckModules::all()`, `::get($slug)`, `::active($config)`. `::mergeReport($gesamt, $modul, $category)` überträgt Findings + Summary eines Modul-Reports in den Gesamt-Report.
 
-Die Kategorie-Keys (`design`, `daten`, `synchro`, `integration`, `system`, `datenschutz`, `tabellen`, `befuellung`, `aktualitaet`) müssen in `HealthcheckReport::CATEGORY_LABELS` registriert sein.
+Die Kategorie-Keys (`design`, `data`, `synchro`, `integration`, `system`, `privacy`, `tables`, `columns`, `freshness`) müssen in `HealthcheckReport::CATEGORY_LABELS` registriert sein.
 
 ## HTML-Rendering (`lib/HealthcheckReport.php`)
 
@@ -193,23 +193,27 @@ Credentials erforderlich, da die Collectoren in der Extension `itomig-healthchec
 
 ## Schema der Eingangs-ZIPs
 
-Erwartet wird, was die iTop-Extension `itomig-healthcheck` (Collector-Version ≥ 2.0.0) erzeugt:
+Erwartet wird, was die iTop-Extension `itomig-healthcheck` (Collector-Version ≥ 3.0.0) erzeugt.
+**Breaking Change:** Seit Collector-Version 3.0.0 sind alle JSON-Keys englisch (siehe
+`itomig-healthcheck/tools/key-mapping.php` für die vollständige DE→EN-Umstellung); Collector-Version
+2.x lieferte noch deutsche Keys (`daten`/`kunde`/`umgebung`/...) und ist mit dieser Reporter-Version
+nicht mehr kompatibel.
 
 ```
 healthcheck_<kunde>_<ts>.zip
-├── manifest.json   {kunde, umgebung, itop_version, db_server_version, timestamp, extension_version, module:[…]}
-├── design.json     {meta:{…}, daten:{…}}
-├── daten.json
+├── manifest.json      {customer, environment, itop_version, db_server_version, timestamp, extension_version, modules:[…]}
+├── design.json        {meta:{…}, data:{…}}
+├── data.json
 ├── synchro.json
 ├── integration.json
 ├── system.json
-├── datenschutz.json
-├── tabellen-uebersicht.json
-├── spalten-befuellung.json
-└── objekt-aktualitaet.json
+├── privacy.json
+├── table-overview.json
+├── column-fill.json
+└── object-freshness.json
 ```
 
-Jede Modul-JSON folgt `{meta: {kunde, umgebung, modul, tier, timestamp, collector_version, itop_version|db_server_version}, daten: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen.
+Jede Modul-JSON folgt `{meta: {customer, environment, module, tier, timestamp, collector_version, itop_version|db_server_version}, data: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen.
 
 ## Verwandte Repos
 
@@ -225,5 +229,5 @@ Jede Modul-JSON folgt `{meta: {kunde, umgebung, modul, tier, timestamp, collecto
 
 ## Version
 
-Version: 4.0.0
-Last Updated: 2026-07-23
+Version: 26.3.0
+Last Updated: 2026-08-12
