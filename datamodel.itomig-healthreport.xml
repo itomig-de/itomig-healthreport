@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<itop_design xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="3.2">
+  <constants>
+  </constants>
+  <classes>
+    <class id="HealthcheckRun" _delta="define">
+      <parent>cmdbAbstractObject</parent>
+      <properties>
+        <category>bizmodel,searchable</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>itomig_healthreport_run</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field></db_final_class_field>
+        <is_link>0</is_link>
+      </properties>
+
+      <naming>
+        <attributes>
+          <attribute id="kunde"/>
+          <attribute id="zeitpunkt"/>
+        </attributes>
+      </naming>
+
+      <reconciliation>
+        <attributes>
+          <attribute id="kunde"/>
+          <attribute id="zeitpunkt"/>
+        </attributes>
+      </reconciliation>
+
+      <fields>
+        <field id="kunde" xsi:type="AttributeString" _delta="define">
+          <sql>kunde</sql>
+          <default_value></default_value>
+          <is_null_allowed>false</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="umgebung" xsi:type="AttributeString" _delta="define">
+          <sql>umgebung</sql>
+          <default_value></default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="zeitpunkt" xsi:type="AttributeDateTime" _delta="define">
+          <sql>zeitpunkt</sql>
+          <default_value></default_value>
+          <is_null_allowed>false</is_null_allowed>
+        </field>
+        <field id="itop_version" xsi:type="AttributeString" _delta="define">
+          <sql>itop_version</sql>
+          <default_value></default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="db_server_version" xsi:type="AttributeString" _delta="define">
+          <sql>db_server_version</sql>
+          <default_value></default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="extension_version" xsi:type="AttributeString" _delta="define">
+          <sql>extension_version</sql>
+          <default_value></default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="ampel_gesamt" xsi:type="AttributeEnum" _delta="define">
+          <sql>ampel_gesamt</sql>
+          <values>
+            <value id="rot" _delta="define"><code>rot</code></value>
+            <value id="gelb" _delta="define"><code>gelb</code></value>
+            <value id="gruen" _delta="define"><code>gruen</code></value>
+          </values>
+          <default_value>gruen</default_value>
+          <is_null_allowed>false</is_null_allowed>
+          <display_style>list</display_style>
+          <sort_type>rank</sort_type>
+        </field>
+        <field id="modul_anzahl" xsi:type="AttributeInteger" _delta="define">
+          <sql>modul_anzahl</sql>
+          <default_value>0</default_value>
+          <is_null_allowed>false</is_null_allowed>
+        </field>
+        <field id="zip_datei" xsi:type="AttributeBlob" _delta="define">
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="summary_html" xsi:type="AttributeBlob" _delta="define">
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="summary_json" xsi:type="AttributeBlob" _delta="define">
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="modul_reports" xsi:type="AttributeLinkedSet" _delta="define">
+          <linked_class>HealthcheckModuleReport</linked_class>
+          <ext_key_to_me>run_id</ext_key_to_me>
+          <edit_mode>none</edit_mode>
+        </field>
+      </fields>
+
+      <presentation>
+        <details>
+          <items>
+            <item id="col:col1" _delta="define">
+              <rank>10</rank>
+              <items>
+                <item id="fieldset:Class:HealthcheckRun:context" _delta="define">
+                  <rank>10</rank>
+                  <items>
+                    <item id="kunde"><rank>10</rank></item>
+                    <item id="umgebung"><rank>20</rank></item>
+                    <item id="zeitpunkt"><rank>30</rank></item>
+                    <item id="ampel_gesamt"><rank>40</rank></item>
+                    <item id="modul_anzahl"><rank>50</rank></item>
+                  </items>
+                </item>
+                <item id="fieldset:Class:HealthcheckRun:versionen" _delta="define">
+                  <rank>20</rank>
+                  <items>
+                    <item id="itop_version"><rank>10</rank></item>
+                    <item id="db_server_version"><rank>20</rank></item>
+                    <item id="extension_version"><rank>30</rank></item>
+                  </items>
+                </item>
+              </items>
+            </item>
+            <item id="col:col2" _delta="define">
+              <rank>20</rank>
+              <items>
+                <item id="fieldset:Class:HealthcheckRun:dateien" _delta="define">
+                  <rank>10</rank>
+                  <items>
+                    <item id="zip_datei"><rank>10</rank></item>
+                    <item id="summary_html"><rank>20</rank></item>
+                    <item id="summary_json"><rank>30</rank></item>
+                  </items>
+                </item>
+              </items>
+            </item>
+            <item id="modul_reports" _delta="define">
+              <rank>30</rank>
+            </item>
+          </items>
+        </details>
+
+        <search>
+          <items>
+            <item id="kunde"><rank>10</rank></item>
+            <item id="umgebung"><rank>20</rank></item>
+            <item id="ampel_gesamt"><rank>30</rank></item>
+          </items>
+        </search>
+
+        <list>
+          <items>
+            <item id="kunde"><rank>10</rank></item>
+            <item id="umgebung"><rank>20</rank></item>
+            <item id="zeitpunkt"><rank>30</rank></item>
+            <item id="ampel_gesamt"><rank>40</rank></item>
+            <item id="modul_anzahl"><rank>50</rank></item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+
+    <class id="HealthcheckModuleReport" _delta="define">
+      <parent>cmdbAbstractObject</parent>
+      <properties>
+        <category>bizmodel,searchable</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>itomig_healthreport_modul</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field></db_final_class_field>
+        <is_link>0</is_link>
+      </properties>
+
+      <naming>
+        <attributes>
+          <attribute id="label"/>
+        </attributes>
+      </naming>
+
+      <reconciliation>
+        <attributes>
+          <attribute id="run_id"/>
+          <attribute id="kategorie"/>
+        </attributes>
+      </reconciliation>
+
+      <fields>
+        <field id="run_id" xsi:type="AttributeExternalKey" _delta="define">
+          <sql>run_id</sql>
+          <target_class>HealthcheckRun</target_class>
+          <on_target_delete>DEL_AUTO</on_target_delete>
+          <is_null_allowed>false</is_null_allowed>
+        </field>
+        <field id="kategorie" xsi:type="AttributeString" _delta="define">
+          <sql>kategorie</sql>
+          <default_value></default_value>
+          <is_null_allowed>false</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="label" xsi:type="AttributeString" _delta="define">
+          <sql>label</sql>
+          <default_value></default_value>
+          <is_null_allowed>false</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="ampel" xsi:type="AttributeEnum" _delta="define">
+          <sql>ampel</sql>
+          <values>
+            <value id="rot" _delta="define"><code>rot</code></value>
+            <value id="gelb" _delta="define"><code>gelb</code></value>
+            <value id="gruen" _delta="define"><code>gruen</code></value>
+          </values>
+          <default_value>gruen</default_value>
+          <is_null_allowed>false</is_null_allowed>
+          <display_style>list</display_style>
+          <sort_type>rank</sort_type>
+        </field>
+        <field id="befund_anzahl" xsi:type="AttributeInteger" _delta="define">
+          <sql>befund_anzahl</sql>
+          <default_value>0</default_value>
+          <is_null_allowed>false</is_null_allowed>
+        </field>
+        <field id="report_html" xsi:type="AttributeBlob" _delta="define">
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="report_json" xsi:type="AttributeBlob" _delta="define">
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+      </fields>
+
+      <presentation>
+        <details>
+          <items>
+            <item id="col:col1" _delta="define">
+              <rank>10</rank>
+              <items>
+                <item id="fieldset:Class:HealthcheckModuleReport:info" _delta="define">
+                  <rank>10</rank>
+                  <items>
+                    <item id="run_id"><rank>10</rank></item>
+                    <item id="kategorie"><rank>20</rank></item>
+                    <item id="label"><rank>30</rank></item>
+                    <item id="ampel"><rank>40</rank></item>
+                    <item id="befund_anzahl"><rank>50</rank></item>
+                  </items>
+                </item>
+              </items>
+            </item>
+            <item id="col:col2" _delta="define">
+              <rank>20</rank>
+              <items>
+                <item id="fieldset:Class:HealthcheckModuleReport:dateien" _delta="define">
+                  <rank>10</rank>
+                  <items>
+                    <item id="report_html"><rank>10</rank></item>
+                    <item id="report_json"><rank>20</rank></item>
+                  </items>
+                </item>
+              </items>
+            </item>
+          </items>
+        </details>
+
+        <search>
+          <items>
+            <item id="run_id"><rank>10</rank></item>
+            <item id="kategorie"><rank>20</rank></item>
+            <item id="ampel"><rank>30</rank></item>
+          </items>
+        </search>
+
+        <list>
+          <items>
+            <item id="run_id"><rank>10</rank></item>
+            <item id="kategorie"><rank>20</rank></item>
+            <item id="label"><rank>30</rank></item>
+            <item id="ampel"><rank>40</rank></item>
+            <item id="befund_anzahl"><rank>50</rank></item>
+          </items>
+        </list>
+      </presentation>
+    </class>
+  </classes>
+
+  <menus>
+    <menu id="ItomigHealthreportMenu" xsi:type="MenuGroup" _delta="define">
+      <rank>51</rank>
+      <parent>SystemTools</parent>
+      <enable_admin_only>1</enable_admin_only>
+    </menu>
+    <menu id="ItomigHealthreportUpload" xsi:type="WebPageMenuNode" _delta="define">
+      <rank>10</rank>
+      <parent>ItomigHealthreportMenu</parent>
+      <url>$pages/UI.php?route=itomig_healthreport.show_form</url>
+      <enable_admin_only>1</enable_admin_only>
+    </menu>
+    <menu id="ItomigHealthreportRuns" xsi:type="OQLMenuNode" _delta="define">
+      <rank>20</rank>
+      <parent>ItomigHealthreportMenu</parent>
+      <oql>SELECT HealthcheckRun</oql>
+      <do_search>auto</do_search>
+      <enable_admin_only>1</enable_admin_only>
+    </menu>
+  </menus>
+
+  <user_rights>
+    <groups>
+    </groups>
+    <profiles>
+    </profiles>
+  </user_rights>
+</itop_design>

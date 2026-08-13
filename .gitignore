@@ -1,0 +1,15 @@
+# Lokale Reporter-Overrides – niemals einchecken
+config/healthcheck-config.php
+
+# Generierte Ausgabedateien (lokale CLI-Nutzung der Engine, s. reporters/report-all.php)
+daten/
+auswertung/
+
+# Alte Web-UI wurde entfernt (siehe CLAUDE.md); Restdaten aus vorherigen lokalen
+# Laeufen (u. a. echte Kunden-Reports) liegen ggf. noch auf der Platte, gehoeren
+# aber nicht ins Repo.
+web/
+
+# Tool-/IDE-State (lokal)
+.claude/
+.DS_Store

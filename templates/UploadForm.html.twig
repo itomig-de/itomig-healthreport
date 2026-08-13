@@ -1,0 +1,39 @@
+{# ITOMIG Healthreport - Upload-Formular #}
+{% apply spaceless %}
+
+{% UIContentBlock Standard {'aContainerClasses':['itomig-healthreport']} %}
+
+    {% UITitle ForPage {'sTitle':'Itomig:HealthReport:UI:PageTitle'|dict_s} %}{% EndUITitle %}
+
+    <div class="ibo-v-spacer">&nbsp;</div>
+
+    {% UIContentBlock Standard {'aContainerClasses':['display_block']} %}
+
+        {% UIAlert ForInformation {'sId':'itomig-healthreport-intro','IsCollapsible':false,'IsClosable':false} %}
+            {{ 'Itomig:HealthReport:UI:Intro'|dict_s }}
+        {% EndUIAlert %}
+
+        {% if sErrorMessage is defined and sErrorMessage %}
+            {% UIAlert ForError {'sId':'itomig-healthreport-error','IsCollapsible':false,'IsClosable':true} %}
+                {{ sErrorMessage }}
+            {% EndUIAlert %}
+        {% endif %}
+
+        <form id="itomig-healthreport-form" action="{{ sFormAction }}" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="transaction_id" value="{{ sTransactionId }}">
+
+            {% UIFieldSet Standard {'sLegend':'Itomig:HealthReport:UI:UploadLabel'|dict_s} %}
+                <input type="file" id="itomig_healthreport_zip" name="zip" accept=".zip,application/zip" class="ibo-input" required>
+            {% EndUIFieldSet %}
+
+            {% UIContentBlock Standard {'aContainerClasses':['ibo-update-core-submit']} %}
+                {% UIButton ForPrimaryAction {'sLabel':'Itomig:HealthReport:UI:Submit'|dict_s,'sId':'itomig-healthreport-submit','bIsSubmit':true} %}
+                {% UISpinner Standard {'sId':'itomig-healthreport-spinner','IsHidden':true} %}
+            {% EndUIContentBlock %}
+        </form>
+
+    {% EndUIContentBlock %}
+
+{% EndUIContentBlock %}
+
+{% endapply %}

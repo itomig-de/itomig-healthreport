@@ -1,0 +1,6 @@
+{# ITOMIG Healthreport - JS: Submit-Schutz und Spinner-Anzeige #}
+
+$("#itomig-healthreport-form").on("submit", function () {
+    $("#itomig-healthreport-submit").prop("disabled", true);
+    $("#itomig-healthreport-spinner").removeClass("ibo-is-hidden");
+});
