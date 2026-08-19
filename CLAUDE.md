@@ -215,6 +215,19 @@ healthcheck_<kunde>_<ts>.zip
 
 Jede Modul-JSON folgt `{meta: {customer, environment, module, tier, timestamp, collector_version, itop_version|db_server_version}, data: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen.
 
+**Datenschutz-Runde (2026-08):** Aus DSGVO-Gründen liefert der Collector keine
+personenbezogenen Einzeldaten mehr, nur noch Aggregat-Zahlen — betroffen sind
+`integration.user_accounts` (nur noch `active`/`disabled`/`with_admin`/`without_contact`/`error`,
+kein `items[]` mit Login/Kontakt/Profil mehr), `privacy.inactive_sample` (nur noch
+`{"error": null}`, Auswertung läuft stattdessen über `privacy.persons.inactive`) und
+`privacy.disabled_users` (nur noch `count`/`error`, kein `items[]` mit Login/Person mehr).
+`system.data.itop_version` ist komplett entfallen (war redundant zu `meta.itop_version`, das
+unverändert vorhanden bleibt). Neu verfügbar: `system.data.php.{version,sapi,extensions}` mit
+den echten PHP-Infos des Collector-Laufs. Optional, nicht auszuwerten: das ZIP kann zusätzlich
+eine `system-information-<ts>.zip` (unveränderte Kopie des iTop-„System Information"-Reports)
+enthalten; `manifest.json` bekommt dafür die Felder `system_report_included`,
+`system_report_filename`, `system_report_error` — beim Parsen ignorieren.
+
 ## Verwandte Repos
 
 | Repo | Verantwortung |

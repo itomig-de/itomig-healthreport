@@ -19,7 +19,7 @@ function reportPrivacy(array $raw, array $config): HealthcheckReport
 
     if ($cfg['check_persons'] ?? true) {
         bewerteInaktivePersonen($report, $daten['persons'] ?? []);
-        bewerteAelteresPersonendaten($report, $daten['inactive_sample'] ?? []);
+        bewerteLoeschpruefungPersonen($report, $daten['persons'] ?? [], (int) ($cfg['inactive_days'] ?? 365));
     }
     bewerteDisabledUsers($report, $daten['disabled_users'] ?? []);
     bewerteDatenschutzRichtlinien($report, $daten['persons'] ?? [], $daten['audit_rules'] ?? []);
@@ -75,20 +75,15 @@ function bewerteInaktivePersonen(HealthcheckReport $report, array $personen): vo
     );
 }
 
-function bewerteAelteresPersonendaten(HealthcheckReport $report, array $stichprobe): void
+function bewerteLoeschpruefungPersonen(HealthcheckReport $report, array $personen, int $inaktivTage): void
 {
-    if (($stichprobe['error'] ?? null) !== null) {
-        $report->addFinding(
-            'privacy',
-            'Älteste Personendaten nicht ermittelbar',
-            'info',
-            'Die ältesten Personendaten konnten nicht ermittelt werden: ' . $stichprobe['error']
-        );
+    if (($personen['error'] ?? null) !== null) {
+        // Fehler wird bereits von bewerteInaktivePersonen() als Finding gemeldet.
         return;
     }
 
-    $items = $stichprobe['items'] ?? [];
-    if (empty($items)) {
+    $inaktiv = (int) ($personen['inactive'] ?? 0);
+    if ($inaktiv === 0) {
         $report->addFinding(
             'privacy',
             'Keine inaktiven Personendaten',
@@ -98,33 +93,16 @@ function bewerteAelteresPersonendaten(HealthcheckReport $report, array $stichpro
         return;
     }
 
-    $details = [];
-    foreach ($items as $p) {
-        $email = $p['email'] ?? '';
-        $emailMasked = '';
-        if ($email !== '') {
-            $parts = explode('@', $email);
-            if (count($parts) === 2) {
-                $emailMasked = substr($parts[0], 0, 2) . '***@' . $parts[1];
-            }
-        }
-        $details[] = [
-            'Name'           => $p['friendlyname'] ?? 'Unbekannt',
-            'E-Mail (mask.)' => $emailMasked ?: '-',
-            'Organisation'   => $p['org_name'] ?? '-',
-        ];
-    }
-
-    $count = count($items);
-    $severity = $count > 10 ? 'warning' : 'info';
+    $severity = $inaktiv > 200 ? 'warning' : 'info';
 
     $report->addFinding(
         'privacy',
-        "Inaktive Personen (Stichprobe: $count)",
+        "Löschprüfung inaktiver Personen ($inaktiv)",
         $severity,
-        "Stichprobe von $count inaktiven Personen. Prüfen Sie, ob für diese Datensätze noch "
-        . 'ein Speicherzweck besteht. Gemäß Art. 17 DSGVO haben betroffene Personen ein Recht auf Löschung.',
-        $details
+        "$inaktiv Personen mit Status \"inaktiv\" (Referenzwert: $inaktivTage Tage). "
+        . 'Prüfen Sie, ob für diese Datensätze noch ein Speicherzweck besteht. Gemäß Art. 17 DSGVO '
+        . 'haben betroffene Personen ein Recht auf Löschung. Aus Datenschutzgründen liefert der '
+        . 'Collector keine Einzeldatensätze mehr — die Prüfung erfolgt direkt in iTop.'
     );
 }
 
@@ -151,15 +129,6 @@ function bewerteDisabledUsers(HealthcheckReport $report, array $users): void
         return;
     }
 
-    $items = array_slice($users['items'] ?? [], 0, 15);
-    $details = [];
-    foreach ($items as $u) {
-        $details[] = [
-            'Login'  => $u['login'] ?? 'Unbekannt',
-            'Person' => $u['contactid_friendlyname'] ?? '-',
-        ];
-    }
-
     $severity = $count > 20 ? 'warning' : 'info';
     $report->addFinding(
         'privacy',
@@ -167,8 +136,8 @@ function bewerteDisabledUsers(HealthcheckReport $report, array $users): void
         $severity,
         "$count deaktivierte User-Accounts vorhanden. "
         . 'Deaktivierte Accounts enthalten möglicherweise personenbezogene Daten (Login-Name, E-Mail). '
-        . 'Prüfen Sie, ob diese bereinigt werden können.',
-        $details
+        . 'Prüfen Sie direkt in iTop, ob diese bereinigt werden können — der Collector liefert aus '
+        . 'Datenschutzgründen keine Einzeldatensätze mehr.'
     );
 }
 
