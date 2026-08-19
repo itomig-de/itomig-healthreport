@@ -1,6 +1,12 @@
 {# ITOMIG Healthreport - Upload-Formular #}
 {% apply spaceless %}
 
+<style>
+    .itomig-healthreport #itomig_healthreport_zip {
+        border: none;
+    }
+</style>
+
 {% UIContentBlock Standard {'aContainerClasses':['itomig-healthreport']} %}
 
     {% UITitle ForPage {'sTitle':'Itomig:HealthReport:UI:PageTitle'|dict_s} %}{% EndUITitle %}
@@ -14,9 +20,7 @@
         {% EndUIAlert %}
 
         {% if sErrorMessage is defined and sErrorMessage %}
-            {% UIAlert ForError {'sId':'itomig-healthreport-error','IsCollapsible':false,'IsClosable':true} %}
-                {{ sErrorMessage }}
-            {% EndUIAlert %}
+            {% UIAlert ForFailure {'sContent':sErrorMessage,'sId':'itomig-healthreport-error','IsCollapsible':false,'IsClosable':true} %}{% EndUIAlert %}
         {% endif %}
 
         <form id="itomig-healthreport-form" action="{{ sFormAction }}" method="post" enctype="multipart/form-data">
