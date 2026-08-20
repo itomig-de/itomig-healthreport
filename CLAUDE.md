@@ -12,6 +12,9 @@ keine API-Calls — die Auswertung läuft direkt im iTop der ITOMIG. PHP 8.1+, n
 (`json`, `zip`).
 
 **Eingang:** ZIP-Upload über das Menü „Healthcheck" in iTop (Route `itomig_healthreport.upload`)
+oder wahlweise über eine Portal-Brick, mit der Kunden ihr ZIP selbst hochladen (nur Ablage als
+`HealthcheckUpload`, Auswertung wird separat in der Konsole angestoßen — siehe „Portal-Upload
+durch Kunden" weiter unten)
 **Ausgang:** `HealthcheckRun`-Objekt (Management-Summary + Original-ZIP als Blob) mit
 verknüpften `HealthcheckModuleReport`-Objekten (ein Detail-Report pro Modul, ebenfalls als Blob)
 
@@ -31,10 +34,18 @@ itomig-healthreport-extension/            # = iTop-Modul-Wurzel (itop/extensions
 ├── dictionaries/{de,en,fr}.dict.itomig-healthreport.php
 ├── templates/UploadForm.html.twig        # Upload-Formular (Twig, ibo-*/UI*-Makros)
 ├── src/
-│   ├── Controller/HealthReportController.php  # Route itomig_healthreport.{show_form,upload}
+│   ├── Controller/HealthReportController.php  # Route itomig_healthreport.{show_form,upload,pending_uploads,process_upload}
+│   ├── Portal/
+│   │   ├── Brick/HealthReportUploadBrick.php       # Portal-Brick "Healthcheck hochladen"
+│   │   ├── Router/HealthReportPortalRouter.php     # Registriert die Portal-Route (ItopExtensionsExtraRoutes)
+│   │   └── Controller/HealthReportUploadBrickController.php  # Portal-Upload (nur Ablage, keine Auswertung)
 │   └── Service/
 │       ├── ReportPipeline.php            # Adapter: bindet lib/reporters/tools ein, liefert Ergebnis-Array
-│       └── RunPersister.php              # Persistiert das Ergebnis als HealthcheckRun/-ModuleReport
+│       ├── RunPersister.php              # Persistiert das Ergebnis als HealthcheckRun/-ModuleReport
+│       ├── UploadProcessor.php           # Wertet einen HealthcheckUpload nachtraeglich aus (Konsole)
+│       └── ZipUploadValidator.php        # Gemeinsame Upload-Validierung (Konsole + Portal)
+├── portal/templates/upload.html.twig     # Portal-Seite der Upload-Brick (Bootstrap 3, kein ibo-*)
+├── portal-bootstrap.php                  # Bindet die Portal-Route ein, nur falls itop-portal-base installiert ist
 ├── lib/
 │   ├── HealthcheckReport.php             # Findings, Ampel, HTML (toHtml + toHtmlManagementSummary)
 │   ├── HealthcheckUtils.php              # Config-Loader, Pfad-Resolver, Logging
@@ -97,6 +108,34 @@ Nach dem Deploy erscheint das Menü **„Healthcheck"** (nur für Admins sichtba
    (`pages/UI.php?operation=details&class=HealthcheckRun&id=...`). Report-HTMLs werden dort
    über iTops eingebauten Blob-Viewer angezeigt (`ormDocument::GetDisplayURL()`,
    `pages/ajax.render.php?operation=display_document`) — kein eigener Streaming-Code nötig.
+
+### Portal-Upload durch Kunden
+
+Zusaetzlich zum Konsolen-Upload gibt es eine Portal-Brick "Healthcheck hochladen"
+(`src/Portal/Brick/HealthReportUploadBrick.php`, Route `p_healthreport_upload`), über die
+Kunden ihr ZIP selbst hochladen koennen. Wichtig: **der Portal-Upload triggert die Auswertung
+bewusst NICHT automatisch** — er legt nur ein `HealthcheckUpload`-Objekt (Status `neu`) mit
+dem ZIP als Blob an (`HealthReportUploadBrickController::SubmitAction()`). ITOMIG sichtet die
+eingegangenen Uploads in der Konsole unter Menü „Healthcheck → Eingegangene Uploads"
+(Route `itomig_healthreport.pending_uploads`) und stoesst die Auswertung dort gezielt per
+Button an (`OperationProcessUpload()` → `UploadProcessor::process()`). `UploadProcessor`
+nutzt dabei unveraendert dieselbe `ReportPipeline`/`RunPersister`-Kette wie der Konsolen-Upload
+und setzt danach `status=ausgewertet` + `run_id` auf dem Upload (oder `status=fehler` +
+`fehlermeldung` bei einer fehlgeschlagenen Auswertung).
+
+Die Portal-Integration folgt dem Standard-iTop-3.2-Muster für Extension-Bricks mit eigenem
+Controller (Vorbild: `approval-base`): Brick-Klasse (`Combodo\iTop\Portal\Brick\PortalBrick`),
+Router-Registrierung über `Combodo\iTop\Portal\Routing\ItopExtensionsExtraRoutes` und ein
+eigener Controller (`Combodo\iTop\Portal\Controller\BrickController`). `portal-bootstrap.php`
+bindet Autoloader + Router nur ein, wenn `itop-portal-base` tatsaechlich installiert ist —
+ohne Portal bleibt die Extension unveraendert nutzbar. Rechte: `HealthcheckUpload` ist der
+einzige Portal-sichtbare Teil der Extension (`user_rights` gewaehrt Profil `2`/"Portal user"
+Lese-/Schreibrechte darauf); `HealthcheckRun`/`HealthcheckModuleReport` bleiben admin-only.
+
+**Ausblick (noch nicht umgesetzt):** Anzeige der Auswertungsergebnisse (Management-Summary)
+im Portal ist fuer eine zukuenftige Version vorgesehen — dafuer fehlt aktuell ein
+Portal-Scope auf `HealthcheckRun` (das Feld heisst dort `kunde_id`, nicht `org_id`) sowie eine
+Ausliefer-Route fuer die Blob-Felder.
 
 ### Wichtige Namens-Kollision
 
@@ -243,4 +282,4 @@ enthalten; `manifest.json` bekommt dafür die Felder `system_report_included`,
 ## Version
 
 Version: 26.3.0
-Last Updated: 2026-08-12
+Last Updated: 2026-08-20

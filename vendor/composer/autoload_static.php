@@ -23,8 +23,12 @@ class ComposerStaticInit79fefb78e38d849435267c6035121890
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Itomig\\iTop\\Extension\\HealthReport\\Controller\\HealthReportController' => __DIR__ . '/../..' . '/src/Controller/HealthReportController.php',
+        'Itomig\\iTop\\Extension\\HealthReport\\Portal\\Brick\\HealthReportUploadBrick' => __DIR__ . '/../..' . '/src/Portal/Brick/HealthReportUploadBrick.php',
+        'Itomig\\iTop\\Extension\\HealthReport\\Portal\\Controller\\HealthReportUploadBrickController' => __DIR__ . '/../..' . '/src/Portal/Controller/HealthReportUploadBrickController.php',
         'Itomig\\iTop\\Extension\\HealthReport\\Service\\ReportPipeline' => __DIR__ . '/../..' . '/src/Service/ReportPipeline.php',
         'Itomig\\iTop\\Extension\\HealthReport\\Service\\RunPersister' => __DIR__ . '/../..' . '/src/Service/RunPersister.php',
+        'Itomig\\iTop\\Extension\\HealthReport\\Service\\UploadProcessor' => __DIR__ . '/../..' . '/src/Service/UploadProcessor.php',
+        'Itomig\\iTop\\Extension\\HealthReport\\Service\\ZipUploadValidator' => __DIR__ . '/../..' . '/src/Service/ZipUploadValidator.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

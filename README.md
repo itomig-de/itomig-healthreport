@@ -11,19 +11,25 @@ erzeugt, wertet es aus und speichert Report + Rohdaten als iTop-Objekte im iTop 
 Kunde (iTop)                   ITOMIG (iTop mit dieser Extension)
 ─────────────                  ───────────────────────────────────
 itomig-healthcheck              itomig-healthreport
-└─ Collector                    ├─ Menü "Healthcheck" → Upload-Formular
-   (PHP-Extension im iTop)      ├─ HealthReportController → ReportPipeline
-   schreibt JSON-Rohdaten       │  (bindet lib/reporters/tools ein)
-   und packt sie ins ZIP        └─ RunPersister → HealthcheckRun + HealthcheckModuleReport
-        │
+└─ Collector                    ├─ Menü "Healthcheck" → Upload-Formular (Admin)
+   (PHP-Extension im iTop)      │  oder Portal-Brick "Healthcheck hochladen" (Kunde)
+   schreibt JSON-Rohdaten       ├─ HealthReportController → ReportPipeline
+   und packt sie ins ZIP        │  (bindet lib/reporters/tools ein)
+        │                       └─ RunPersister → HealthcheckRun + HealthcheckModuleReport
         ▼
-   healthcheck_*.zip ───────► Upload im iTop-Menü "Healthcheck"
+   healthcheck_*.zip ───────► Admin-Upload: sofort ausgewertet
+        │                     Portal-Upload: nur abgelegt als HealthcheckUpload,
+        │                     Auswertung wird separat in der Konsole angestoßen
+        ▼                     ("Eingegangene Uploads" → "Auswerten")
+   Kunden-Portal (itop-portal-base)
 ```
 
 Die Trennung erlaubt:
 - Datensammlung beim Kunden (im iTop-Kontext, ohne API-Credentials, internes API)
 - Reproduzierbare Reports aus persistierten Rohdaten (als iTop-Objekt mit Historie/ACL)
 - Re-Reporting mit angepassten Schwellwerten, ohne neuen Kundenzugriff
+- Selbstständigen ZIP-Upload durch Kunden übers Portal, ohne dass die Auswertung ungeprüft
+  automatisch läuft — ITOMIG entscheidet in der Konsole, wann ausgewertet wird
 
 ## Module (9 insgesamt)
 
@@ -54,18 +60,36 @@ Die Trennung erlaubt:
 ln -s /pfad/zu/itomig-healthreport-extension /pfad/zu/itop/extensions/itomig-healthreport
 
 # iTop-Setup/Toolkit ausführen, um das Datamodell zu kompilieren
-# (legt die Tabellen itomig_healthreport_run / itomig_healthreport_modul an)
+# (legt die Tabellen itomig_healthreport_run / itomig_healthreport_modul / itomig_healthreport_upload an)
 ```
 
 Danach erscheint im iTop-Backend das Menü **„Healthcheck"** (nur für Admins sichtbar):
-- **„Healthcheck hochladen"** — Upload-Formular für das Collector-ZIP
+- **„Healthcheck hochladen"** — Upload-Formular für das Collector-ZIP, wertet sofort aus
+- **„Eingegangene Uploads"** — über das Portal eingegangene, noch nicht ausgewertete ZIPs
+  (`HealthcheckUpload`); pro Zeile ein „Auswerten"-Button, der die Reporter-Pipeline anstößt
 - **„Healthcheck-Läufe"** — Liste aller ausgewerteten `HealthcheckRun`-Objekte
 
-Beim Upload wird das ZIP importiert, alle enthaltenen Module werden ausgewertet und als
-`HealthcheckRun` (inkl. verknüpfter `HealthcheckModuleReport`-Objekte je Modul) gespeichert.
-Anschließend wird auf die Detailseite des neuen Laufs weitergeleitet — Original-ZIP,
-Management-Summary und jeder Modul-Report liegen dort als Datei-Anhang (Blob) vor und werden
-über den nativen iTop-Dokumenten-Viewer angezeigt.
+Beim Admin-Upload wird das ZIP sofort importiert, alle enthaltenen Module werden ausgewertet
+und als `HealthcheckRun` (inkl. verknüpfter `HealthcheckModuleReport`-Objekte je Modul)
+gespeichert. Anschließend wird auf die Detailseite des neuen Laufs weitergeleitet —
+Original-ZIP, Management-Summary und jeder Modul-Report liegen dort als Datei-Anhang (Blob)
+vor und werden über den nativen iTop-Dokumenten-Viewer angezeigt.
+
+### Portal-Upload durch Kunden
+
+Ist `itop-portal-base` installiert, erscheint im Kundenportal zusätzlich eine Brick
+„Healthcheck hochladen". Kunden können dort ihr Collector-ZIP selbst hochladen — es wird
+lediglich als `HealthcheckUpload` (Status „Neu") abgelegt, **die Auswertung startet bewusst
+nicht automatisch**. ITOMIG sichtet eingegangene Uploads in der Konsole unter „Eingegangene
+Uploads" und stößt die Auswertung dort gezielt an; danach entsteht wie beim Admin-Upload ein
+`HealthcheckRun`, und der Upload wird mit Status „Ausgewertet" verknüpft (oder „Fehler" bei
+einer fehlgeschlagenen Auswertung).
+
+Ohne installiertes Portal bleibt die Extension unverändert nutzbar — die Portal-Bestandteile
+schalten sich nur zu, wenn `itop-portal-base` vorhanden ist.
+
+> **Ausblick:** Die Anzeige der Auswertungsergebnisse (Management-Summary) im Portal ist für
+> eine zukünftige Version vorgesehen, aktuell aber nicht Teil dieser Extension.
 
 ## Lokale CLI-Nutzung (Entwicklung/Debugging)
 

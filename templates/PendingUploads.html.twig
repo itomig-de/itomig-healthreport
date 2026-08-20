@@ -1,0 +1,131 @@
+{# ITOMIG Healthreport - Eingegangene Uploads (Portal) #}
+{% apply spaceless %}
+
+<style>
+    .itomig-healthreport-uploads-table {
+        width: 100%;
+        margin-top: var(--ibo-size-300, 14px);
+        border-collapse: collapse;
+        background-color: var(--ibo-color-white-100, #ffffff);
+        border: 1px solid var(--ibo-color-grey-200, #e0e0e0);
+        border-radius: var(--ibo-border-radius-300, 4px);
+        overflow: hidden;
+        font-size: var(--ibo-font-size-200, 13px);
+    }
+    .itomig-healthreport-uploads-table caption {
+        display: none;
+    }
+    .itomig-healthreport-uploads-table th,
+    .itomig-healthreport-uploads-table td {
+        padding: var(--ibo-size-200, 10px) var(--ibo-size-300, 14px);
+        text-align: left;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--ibo-color-grey-200, #e0e0e0);
+    }
+    .itomig-healthreport-uploads-table thead th {
+        background-color: var(--ibo-color-grey-100, #f5f5f5);
+        color: var(--ibo-color-grey-800, #454545);
+        font-weight: var(--ibo-font-weight-600, 600);
+        text-transform: uppercase;
+        font-size: var(--ibo-font-size-100, 11px);
+        letter-spacing: .03em;
+        border-bottom: 1px solid var(--ibo-color-grey-300, #d0d0d0);
+    }
+    .itomig-healthreport-uploads-table tbody tr:nth-child(even) {
+        background-color: var(--ibo-color-grey-50, #fafafa);
+    }
+    .itomig-healthreport-uploads-table tbody tr:hover {
+        background-color: var(--ibo-color-primary-100, #eef6f8);
+    }
+    .itomig-healthreport-uploads-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .itomig-healthreport-uploads-status {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: var(--ibo-border-radius-full, 999px);
+        font-size: var(--ibo-font-size-100, 11px);
+        font-weight: var(--ibo-font-weight-600, 600);
+        white-space: nowrap;
+    }
+    .itomig-healthreport-uploads-status--neu {
+        background-color: var(--ibo-color-information-100, #d6eef7);
+        color: var(--ibo-color-information-800, #075a7a);
+    }
+    .itomig-healthreport-uploads-status--ausgewertet {
+        background-color: var(--ibo-color-success-100, #dcf3e4);
+        color: var(--ibo-color-success-800, #1f6b3c);
+    }
+    .itomig-healthreport-uploads-status--fehler {
+        background-color: var(--ibo-color-danger-100, #fbe0de);
+        color: var(--ibo-color-danger-800, #952b22);
+    }
+    .itomig-healthreport-uploads-table form {
+        margin: 0;
+    }
+</style>
+
+{% UIContentBlock Standard {'aContainerClasses':['itomig-healthreport']} %}
+
+    {% UITitle ForPage {'sTitle':'Itomig:HealthReport:UI:PendingUploadsTitle'|dict_s} %}{% EndUITitle %}
+
+    <div class="ibo-v-spacer">&nbsp;</div>
+
+    {% UIContentBlock Standard {'aContainerClasses':['display_block']} %}
+
+        {% UIAlert ForInformation {'sId':'itomig-healthreport-uploads-intro','IsCollapsible':false,'IsClosable':false} %}
+            {{ 'Itomig:HealthReport:UI:PendingUploadsIntro'|dict_s }}
+        {% EndUIAlert %}
+
+        {% if sErrorMessage is defined and sErrorMessage %}
+            {% UIAlert ForFailure {'sContent':sErrorMessage,'sId':'itomig-healthreport-uploads-error','IsCollapsible':false,'IsClosable':true} %}{% EndUIAlert %}
+        {% endif %}
+
+        {% if aUploads|length > 0 %}
+            <table class="itomig-healthreport-uploads-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'Class:HealthcheckUpload/Attribute:org_id'|dict_s }}</th>
+                        <th>{{ 'Class:HealthcheckUpload/Attribute:eingegangen_am'|dict_s }}</th>
+                        <th>{{ 'Class:HealthcheckUpload/Attribute:dateiname'|dict_s }}</th>
+                        <th>{{ 'Class:HealthcheckUpload/Attribute:status'|dict_s }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for aUpload in aUploads %}
+                        <tr>
+                            <td>{{ aUpload.org_name }}</td>
+                            <td>{{ aUpload.eingegangen_am }}</td>
+                            <td>{{ aUpload.dateiname }}</td>
+                            <td>
+                                <span class="itomig-healthreport-uploads-status itomig-healthreport-uploads-status--{{ aUpload.status }}">
+                                    {{ ('Class:HealthcheckUpload/Attribute:status/Value:' ~ aUpload.status)|dict_s }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if aUpload.status == 'ausgewertet' and aUpload.run_id > 0 %}
+                                    <a href="{{ aUpload.run_url }}">
+                                        {{ 'Itomig:HealthReport:UI:ShowReport'|dict_s }}
+                                    </a>
+                                {% else %}
+                                    <form action="{{ sFormAction }}" method="post">
+                                        <input type="hidden" name="transaction_id" value="{{ sTransactionId }}">
+                                        <input type="hidden" name="upload_id" value="{{ aUpload.id }}">
+                                        {% UIButton ForSecondaryAction {'sLabel':'Itomig:HealthReport:UI:ProcessUpload'|dict_s,'bIsSubmit':true} %}
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>{{ 'Itomig:HealthReport:UI:PendingUploadsEmpty'|dict_s }}</p>
+        {% endif %}
+
+    {% EndUIContentBlock %}
+
+{% EndUIContentBlock %}
+
+{% endapply %}

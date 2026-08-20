@@ -8,6 +8,10 @@ $baseDir = dirname($vendorDir);
 return array(
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'Itomig\\iTop\\Extension\\HealthReport\\Controller\\HealthReportController' => $baseDir . '/src/Controller/HealthReportController.php',
+    'Itomig\\iTop\\Extension\\HealthReport\\Portal\\Brick\\HealthReportUploadBrick' => $baseDir . '/src/Portal/Brick/HealthReportUploadBrick.php',
+    'Itomig\\iTop\\Extension\\HealthReport\\Portal\\Controller\\HealthReportUploadBrickController' => $baseDir . '/src/Portal/Controller/HealthReportUploadBrickController.php',
     'Itomig\\iTop\\Extension\\HealthReport\\Service\\ReportPipeline' => $baseDir . '/src/Service/ReportPipeline.php',
     'Itomig\\iTop\\Extension\\HealthReport\\Service\\RunPersister' => $baseDir . '/src/Service/RunPersister.php',
+    'Itomig\\iTop\\Extension\\HealthReport\\Service\\UploadProcessor' => $baseDir . '/src/Service/UploadProcessor.php',
+    'Itomig\\iTop\\Extension\\HealthReport\\Service\\ZipUploadValidator' => $baseDir . '/src/Service/ZipUploadValidator.php',
 );

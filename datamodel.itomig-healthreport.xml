@@ -15,21 +15,27 @@
         <is_link>0</is_link>
         <naming>
           <attributes>
-            <attribute id="kunde"/>
+            <attribute id="kunde_id"/>
             <attribute id="zeitpunkt"/>
           </attributes>
         </naming>
         <reconciliation>
           <attributes>
-            <attribute id="kunde"/>
+            <attribute id="kunde_id"/>
             <attribute id="zeitpunkt"/>
           </attributes>
         </reconciliation>
       </properties>
 
       <fields>
-        <field id="kunde" xsi:type="AttributeString" _delta="define">
-          <sql>kunde</sql>
+        <field id="kunde_id" xsi:type="AttributeExternalKey" _delta="define">
+          <sql>kunde_id</sql>
+          <target_class>Organization</target_class>
+          <on_target_delete>DEL_MANUAL</on_target_delete>
+          <is_null_allowed>false</is_null_allowed>
+        </field>
+        <field id="zip_kunde_name" xsi:type="AttributeString" _delta="define">
+          <sql>zip_kunde_name</sql>
           <default_value></default_value>
           <is_null_allowed>false</is_null_allowed>
           <validation_pattern></validation_pattern>
@@ -108,11 +114,12 @@
                 <item id="fieldset:Class:HealthcheckRun:context" _delta="define">
                   <rank>10</rank>
                   <items>
-                    <item id="kunde"><rank>10</rank></item>
-                    <item id="umgebung"><rank>20</rank></item>
-                    <item id="zeitpunkt"><rank>30</rank></item>
-                    <item id="ampel_gesamt"><rank>40</rank></item>
-                    <item id="modul_anzahl"><rank>50</rank></item>
+                    <item id="kunde_id"><rank>10</rank></item>
+                    <item id="zip_kunde_name"><rank>20</rank></item>
+                    <item id="umgebung"><rank>30</rank></item>
+                    <item id="zeitpunkt"><rank>40</rank></item>
+                    <item id="ampel_gesamt"><rank>50</rank></item>
+                    <item id="modul_anzahl"><rank>60</rank></item>
                   </items>
                 </item>
                 <item id="fieldset:Class:HealthcheckRun:versionen" _delta="define">
@@ -146,15 +153,16 @@
 
         <search>
           <items>
-            <item id="kunde"><rank>10</rank></item>
-            <item id="umgebung"><rank>20</rank></item>
-            <item id="ampel_gesamt"><rank>30</rank></item>
+            <item id="kunde_id"><rank>10</rank></item>
+            <item id="zip_kunde_name"><rank>20</rank></item>
+            <item id="umgebung"><rank>30</rank></item>
+            <item id="ampel_gesamt"><rank>40</rank></item>
           </items>
         </search>
 
         <list>
           <items>
-            <item id="kunde"><rank>10</rank></item>
+            <item id="kunde_id"><rank>10</rank></item>
             <item id="umgebung"><rank>20</rank></item>
             <item id="zeitpunkt"><rank>30</rank></item>
             <item id="ampel_gesamt"><rank>40</rank></item>
@@ -286,7 +294,166 @@
         </list>
       </presentation>
     </class>
+
+    <class id="HealthcheckUpload" _delta="define">
+      <parent>cmdbAbstractObject</parent>
+      <properties>
+        <category>bizmodel,searchable</category>
+        <abstract>false</abstract>
+        <key_type>autoincrement</key_type>
+        <db_table>itomig_healthreport_upload</db_table>
+        <db_key_field>id</db_key_field>
+        <db_final_class_field></db_final_class_field>
+        <is_link>0</is_link>
+        <naming>
+          <attributes>
+            <attribute id="org_id"/>
+            <attribute id="eingegangen_am"/>
+          </attributes>
+        </naming>
+        <reconciliation>
+          <attributes>
+            <attribute id="org_id"/>
+            <attribute id="eingegangen_am"/>
+          </attributes>
+        </reconciliation>
+      </properties>
+
+      <fields>
+        <field id="org_id" xsi:type="AttributeExternalKey" _delta="define">
+          <sql>org_id</sql>
+          <target_class>Organization</target_class>
+          <on_target_delete>DEL_MANUAL</on_target_delete>
+          <is_null_allowed>false</is_null_allowed>
+        </field>
+        <field id="hochgeladen_von_id" xsi:type="AttributeExternalKey" _delta="define">
+          <sql>hochgeladen_von_id</sql>
+          <target_class>Person</target_class>
+          <on_target_delete>DEL_MANUAL</on_target_delete>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="eingegangen_am" xsi:type="AttributeDateTime" _delta="define">
+          <sql>eingegangen_am</sql>
+          <default_value></default_value>
+          <is_null_allowed>false</is_null_allowed>
+        </field>
+        <field id="dateiname" xsi:type="AttributeString" _delta="define">
+          <sql>dateiname</sql>
+          <default_value></default_value>
+          <is_null_allowed>false</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="zip_datei" xsi:type="AttributeBlob" _delta="define">
+          <is_null_allowed>false</is_null_allowed>
+        </field>
+        <field id="status" xsi:type="AttributeEnum" _delta="define">
+          <sql>status</sql>
+          <values>
+            <value id="neu" _delta="define"><code>neu</code></value>
+            <value id="ausgewertet" _delta="define"><code>ausgewertet</code></value>
+            <value id="fehler" _delta="define"><code>fehler</code></value>
+          </values>
+          <default_value>neu</default_value>
+          <is_null_allowed>false</is_null_allowed>
+          <display_style>list</display_style>
+          <sort_type>rank</sort_type>
+        </field>
+        <field id="run_id" xsi:type="AttributeExternalKey" _delta="define">
+          <sql>run_id</sql>
+          <target_class>HealthcheckRun</target_class>
+          <on_target_delete>DEL_MANUAL</on_target_delete>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+        <field id="fehlermeldung" xsi:type="AttributeText" _delta="define">
+          <sql>fehlermeldung</sql>
+          <default_value></default_value>
+          <is_null_allowed>true</is_null_allowed>
+        </field>
+      </fields>
+
+      <methods>
+      </methods>
+
+      <presentation>
+        <details>
+          <items>
+            <item id="col:col1" _delta="define">
+              <rank>10</rank>
+              <items>
+                <item id="fieldset:Class:HealthcheckUpload:context" _delta="define">
+                  <rank>10</rank>
+                  <items>
+                    <item id="org_id"><rank>10</rank></item>
+                    <item id="hochgeladen_von_id"><rank>20</rank></item>
+                    <item id="eingegangen_am"><rank>30</rank></item>
+                    <item id="dateiname"><rank>40</rank></item>
+                    <item id="status"><rank>50</rank></item>
+                  </items>
+                </item>
+              </items>
+            </item>
+            <item id="col:col2" _delta="define">
+              <rank>20</rank>
+              <items>
+                <item id="fieldset:Class:HealthcheckUpload:auswertung" _delta="define">
+                  <rank>10</rank>
+                  <items>
+                    <item id="run_id"><rank>10</rank></item>
+                    <item id="fehlermeldung"><rank>20</rank></item>
+                    <item id="zip_datei"><rank>30</rank></item>
+                  </items>
+                </item>
+              </items>
+            </item>
+          </items>
+        </details>
+
+        <search>
+          <items>
+            <item id="org_id"><rank>10</rank></item>
+            <item id="status"><rank>20</rank></item>
+            <item id="dateiname"><rank>30</rank></item>
+          </items>
+        </search>
+
+        <list>
+          <items>
+            <item id="org_id"><rank>10</rank></item>
+            <item id="eingegangen_am"><rank>20</rank></item>
+            <item id="dateiname"><rank>30</rank></item>
+            <item id="status"><rank>40</rank></item>
+          </items>
+        </list>
+      </presentation>
+    </class>
   </classes>
+
+  <module_designs>
+    <module_design id="itop-portal" xsi:type="portal" _delta="if_exists">
+      <bricks>
+        <brick id="healthreport_upload"
+               xsi:type="Itomig\iTop\Extension\HealthReport\Portal\Brick\HealthReportUploadBrick"
+               _delta="define">
+          <active>true</active>
+          <rank>
+            <default>70</default>
+          </rank>
+          <width>12</width>
+          <title>
+            <default>Brick:Portal:HealthReportUpload:Title</default>
+          </title>
+          <description>Brick:Portal:HealthReportUpload:Title+</description>
+          <decoration_class>
+            <default>fas fa-file-upload fa-2x</default>
+          </decoration_class>
+          <security>
+            <denied_profiles/>
+            <allowed_profiles/>
+          </security>
+        </brick>
+      </bricks>
+    </module_design>
+  </module_designs>
 
   <menus>
     <menu id="ItomigHealthreportMenu" xsi:type="MenuGroup" _delta="define">
@@ -307,12 +474,34 @@
       <do_search>auto</do_search>
       <enable_admin_only>1</enable_admin_only>
     </menu>
+    <menu id="ItomigHealthreportUploads" xsi:type="WebPageMenuNode" _delta="define">
+      <rank>15</rank>
+      <parent>ItomigHealthreportMenu</parent>
+      <url>$pages/UI.php?route=itomig_healthreport.pending_uploads</url>
+      <enable_admin_only>1</enable_admin_only>
+    </menu>
   </menus>
 
   <user_rights>
     <groups>
+      <group id="ItomigHealthreportUpload" _delta="define">
+        <classes>
+          <class id="HealthcheckUpload"/>
+        </classes>
+      </group>
     </groups>
     <profiles>
+      <profile id="2" _delta="must_exist">
+        <groups>
+          <group id="ItomigHealthreportUpload" _delta="define">
+            <actions>
+              <action id="action:read">allow</action>
+              <action id="action:bulk read">allow</action>
+              <action id="action:write">allow</action>
+            </actions>
+          </group>
+        </groups>
+      </profile>
     </profiles>
   </user_rights>
 </itop_design>
