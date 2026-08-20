@@ -1,4 +1,12 @@
-{# ITOMIG Healthreport - JS: Submit-Schutz und Spinner-Anzeige #}
+{# ITOMIG Healthreport - JS: Pflichtfelder, Datei-Filter, Submit-Schutz und Spinner-Anzeige #}
+
+// UISelect/UIFileSelect bieten keine Parameter fuer "required"/"accept" an,
+// daher hier nachgeruestet (identisches Verhalten zum frueheren rohen HTML).
+$("#itomig_healthreport_org").attr("required", "required");
+$("#itomig_healthreport_zip").attr({
+    "required": "required",
+    "accept": ".zip,application/zip"
+});
 
 $("#itomig-healthreport-form").on("submit", function () {
     $("#itomig-healthreport-submit").prop("disabled", true);

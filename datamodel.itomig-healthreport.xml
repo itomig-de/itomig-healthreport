@@ -15,8 +15,8 @@
         <is_link>0</is_link>
         <naming>
           <attributes>
-            <attribute id="kunde_id"/>
-            <attribute id="zeitpunkt"/>
+            <attribute id="kunde_name"/>
+            <attribute id="zip_kunde_name"/>
           </attributes>
         </naming>
         <reconciliation>
@@ -34,10 +34,26 @@
           <on_target_delete>DEL_MANUAL</on_target_delete>
           <is_null_allowed>false</is_null_allowed>
         </field>
+        <field id="kunde_name" xsi:type="AttributeExternalField" _delta="define">
+          <extkey_attcode>kunde_id</extkey_attcode>
+          <target_attcode>name</target_attcode>
+        </field>
         <field id="zip_kunde_name" xsi:type="AttributeString" _delta="define">
           <sql>zip_kunde_name</sql>
           <default_value></default_value>
           <is_null_allowed>false</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="zip_customer_url" xsi:type="AttributeString" _delta="define">
+          <sql>zip_customer_url</sql>
+          <default_value></default_value>
+          <is_null_allowed>true</is_null_allowed>
+          <validation_pattern></validation_pattern>
+        </field>
+        <field id="zip_instance_id" xsi:type="AttributeString" _delta="define">
+          <sql>zip_instance_id</sql>
+          <default_value></default_value>
+          <is_null_allowed>true</is_null_allowed>
           <validation_pattern></validation_pattern>
         </field>
         <field id="umgebung" xsi:type="AttributeString" _delta="define">
@@ -120,6 +136,8 @@
                     <item id="zeitpunkt"><rank>40</rank></item>
                     <item id="ampel_gesamt"><rank>50</rank></item>
                     <item id="modul_anzahl"><rank>60</rank></item>
+                    <item id="zip_customer_url"><rank>70</rank></item>
+                    <item id="zip_instance_id"><rank>80</rank></item>
                   </items>
                 </item>
                 <item id="fieldset:Class:HealthcheckRun:versionen" _delta="define">

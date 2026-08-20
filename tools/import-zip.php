@@ -21,6 +21,16 @@ require_once __DIR__ . '/../lib/HealthcheckModules.php';
 /**
  * Entpackt das ZIP und schreibt die Modul-JSONs ins Pro-Kunde-Layout.
  *
+ * Hinweis (Collector-Version >= 26.3.0 von itomig-healthcheck): `manifest.customer`
+ * ist seither die volle app_root_url der Kundeninstanz (Fallback db_name, falls
+ * app_root_url leer ist) und daher nicht mehr als Kurz-/Anzeigename geeignet.
+ * Der bisherige Zweck von `customer` (Slug fuer daten/auswertung, Anzeigename)
+ * wird deshalb aus dem neuen Feld `db_name` gespeist. `customer` (roh, als URL)
+ * und `instance_id` (stabile UUID der Kundeninstanz) werden zusaetzlich
+ * durchgereicht, um kuenftig Mismatches zwischen Name und Instanz erkennen zu
+ * koennen - siehe itomig-healthcheck/docs/key-changes-for-report-creator.md
+ * Abschnitte 6 und 8.
+ *
  * @return array{
  *     kunde: string,
  *     umgebung: string,
@@ -28,6 +38,8 @@ require_once __DIR__ . '/../lib/HealthcheckModules.php';
  *     itop_version: string|null,
  *     db_server_version: string|null,
  *     extension_version: string|null,
+ *     customer_url: string|null,
+ *     instance_id: string|null,
  *     imported: array<string, string>
  * }
  */
@@ -56,15 +68,22 @@ function importZip(string $zipPath, array $config): array
         throw new \RuntimeException('manifest.json ist kein gültiges JSON: ' . $e->getMessage());
     }
 
-    $kundeRaw = (string) ($manifest['customer'] ?? 'unbekannt');
+    // Name/Slug bewusst aus db_name statt customer: customer ist seit
+    // Collector-Version 26.3.0 die app_root_url (URL), db_name entspricht dem
+    // fruehen Verhalten (Datenbankname der Kundeninstanz).
+    $kundeRaw = (string) ($manifest['db_name'] ?? 'unbekannt');
     $kundeSlug = HealthcheckUtils::sanitizeFilename($kundeRaw);
     if ($kundeSlug === '') {
         $kundeSlug = 'unbekannt';
     }
     $umgebung = (string) ($manifest['environment'] ?? '');
+    $appRootUrl = (string) ($manifest['app_root_url'] ?? '');
+    $customerUrl = isset($manifest['customer']) ? (string) $manifest['customer'] : null;
+    $instanceId = isset($manifest['instance_id']) ? (string) $manifest['instance_id'] : null;
 
-    // Kunde in Config-Kopie überschreiben für die Pfad-Resolver
-    $config['kunde'] = ['name' => $kundeSlug, 'umgebung' => $umgebung];
+    // Kunde in Config-Kopie überschreiben für die Pfad-Resolver; app_root_url
+    // nur für Anzeige/Debugging mitgegeben, nicht für die Pfadbildung genutzt.
+    $config['kunde'] = ['name' => $kundeSlug, 'umgebung' => $umgebung, 'app_root_url' => $appRootUrl];
 
     $ts = parseManifestTimestamp((string) ($manifest['timestamp'] ?? ''));
     $module = $manifest['modules'] ?? array_keys(HealthcheckModules::all());
@@ -109,6 +128,8 @@ function importZip(string $zipPath, array $config): array
         'itop_version'      => $manifest['itop_version'] ?? null,
         'db_server_version' => $manifest['db_server_version'] ?? null,
         'extension_version' => $manifest['extension_version'] ?? null,
+        'customer_url'      => $customerUrl,
+        'instance_id'       => $instanceId,
         'imported'          => $imported,
     ];
 }
