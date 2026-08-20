@@ -1,0 +1,130 @@
+====== Healthcheck - Report-Auswertung (ITOMIG GmbH) ======
+
+---- dataentry summary ----
+name             : Healthcheck - Report-Auswertung (ITOMIG GmbH)
+description_wiki : Nimmt Healthcheck-Collector-ZIPs entgegen, wertet sie aus und speichert Report + Rohdaten als iTop-Objekte.
+index_hidden     : yes
+version          : 26.3.0
+release_dt       : 2026-08-20
+itop-version-min : 3.2.0
+code             : itomig-healthreport
+dependencies_s   : itop-profiles-itil
+language         :  %trans%
+
+----
+<available_translations>Sprache ändern: </available_translations>
+
+<related_components>Weitere Versionen:</related_components>
+
+===== Kurzbeschreibung =====
+
+Die Extension **itomig-healthreport** nimmt das Collector-ZIP der iTop-Extension
+//itomig-healthcheck// entgegen, wertet alle enthaltenen Module aus und speichert das
+Ergebnis dauerhaft als iTop-Objekte statt nur als Dateien auf der Platte. Jeder Lauf bekommt
+damit eine Historie, eine Detailseite, Such-/Listenansicht und Zugriffskontrolle direkt über
+iTop.
+
+  * Admin-Upload in der Konsole über das Menü „Healthcheck“, der sofort ausgewertet wird
+  * Optionaler Portal-Brick, über den Kunden ihr Collector-ZIP selbst hochladen können
+  * Getrennte, von ITOMIG kontrollierte Auswertung eingegangener Portal-Uploads
+  * Management-Summary und Detail-Reports pro Modul als Datei-Anhang (Blob) direkt am Objekt
+
+===== Versionshistorie =====
+
+{{section>start#Versionshistorie}}
+
+===== Einschränkungen =====
+
+  * Erwartet ein Collector-ZIP der iTop-Extension //itomig-healthcheck// ab Collector-Version
+    3.0.0 (englische JSON-Keys); ältere Collector-Versionen mit deutschen Keys werden nicht
+    mehr unterstützt.
+  * Der Portal-Upload legt das ZIP nur als ''HealthcheckUpload'' ab und stößt **keine**
+    automatische Auswertung an — ein Admin muss die Auswertung in der Konsole unter
+    „Healthcheck → Eingegangene Uploads“ explizit anstoßen.
+  * Die Portal-Brick „Healthcheck hochladen“ erscheint nur, wenn die Extension
+    ''itop-portal-base'' installiert ist; ohne Portal bleibt ausschließlich der
+    Konsolen-Upload verfügbar.
+  * Ergebnisse (Management-Summary, Detail-Reports) sind aktuell nur in der Konsole
+    einsehbar, nicht im Portal — eine Portal-Ansicht der Auswertungsergebnisse ist für eine
+    zukünftige Version vorgesehen.
+  * Schlägt ein einzelner Modul-Reporter fehl, wird dieser übersprungen und der Gesamtlauf
+    trotzdem gespeichert; nur wenn kein einziges Modul ausgewertet werden konnte, bricht die
+    Verarbeitung komplett ab.
+
+===== Voraussetzungen =====
+
+Zur Installation dieses Moduls wird ein iTop mindestens in der Version 3.2.0 vorausgesetzt
+wobei folgende Module installiert sein müssen:
+
+  * Create standard ITIL profiles (itop-profiles-itil)
+
+<note>Für den optionalen Portal-Upload muss zusätzlich ''itop-portal-base'' installiert sein.
+Ohne diese Extension bleibt der Konsolen-Upload unverändert nutzbar, die Portal-Brick
+erscheint dann einfach nicht.</note>
+
+===== Konfiguration =====
+
+Dieses Modul erfordert keine zusätzliche Konfiguration. Reporter-Schwellwerte und
+Modul-Aktivierung werden über ''config/reporter-defaults.php'' (Git-tracked) bzw. optional
+''config/healthcheck-config.php'' (lokale Overrides) gesteuert — nicht über
+''MetaModel::GetModuleSetting()''.
+
+===== Verwendung =====
+
+Nach der Installation erscheint im iTop-Backend das Menü **„Healthcheck“** (nur für Admins
+sichtbar) mit den Einträgen „Healthcheck hochladen“, „Eingegangene Uploads“ und
+„Healthcheck-Läufe“.
+
+{{:itomig-code:itomig-healthreport:pasted:screenshot_menue_uebersicht.png}}
+
+==== Healthcheck hochladen (Admin-Upload) ====
+
+Ein Admin wählt im Upload-Formular eine Organisation (Kunde) aus und lädt ein
+Collector-ZIP hoch. Das ZIP wird sofort importiert, alle enthaltenen Module werden
+ausgewertet und als ''HealthcheckRun'' (inkl. verknüpfter ''HealthcheckModuleReport''-Objekte
+je Modul) gespeichert. Anschließend erfolgt eine Weiterleitung auf die Detailseite des neuen
+Laufs.
+
+{{:itomig-code:itomig-healthreport:pasted:screenshot_upload_formular.png}}
+
+==== Healthcheck-Läufe ====
+
+Zeigt die komplette Historie aller ausgewerteten ''HealthcheckRun''-Objekte: Kunde,
+Umgebung, Zeitpunkt und Gesamt-Ampel. Auf der Detailseite eines Laufs liegen Original-ZIP,
+Management-Summary (HTML/JSON) sowie ein Tab mit allen Modul-Reports — Reports lassen sich
+direkt aus den Blob-Feldern im Browser öffnen, über iTops eingebauten Dokumenten-Viewer.
+
+{{:itomig-code:itomig-healthreport:pasted:screenshot_healthcheck_lauf_detail.png}}
+
+==== Portal-Upload durch Kunden ====
+
+Ist ''itop-portal-base'' installiert, steht Kunden im Portal eine Brick
+„Healthcheck hochladen“ zur Verfügung. Kunden laden dort ihr Collector-ZIP selbst hoch; es
+wird lediglich als ''HealthcheckUpload'' mit Status „Neu“ abgelegt — **die Auswertung startet
+bewusst nicht automatisch.**
+
+{{:itomig-code:itomig-healthreport:pasted:screenshot_portal_upload.png}}
+
+<note important>Ein Kunden-Upload wird erst zu einem ''HealthcheckRun'', wenn ein Admin dies
+in der Konsole explizit auslöst (siehe „Eingegangene Uploads“ unten). Es findet keine
+ungeprüfte automatische Auswertung von Kundendaten statt.</note>
+
+==== Eingegangene Uploads (Konsole) ====
+
+Zeigt alle über das Portal eingegangenen ''HealthcheckUpload''-Objekte mit Kunde, Zeitpunkt,
+Dateiname und Status. Pro Zeile steht ein „Auswerten“-Button zur Verfügung, der dieselbe
+Reporter-Pipeline wie beim Admin-Upload durchläuft und daraus einen ''HealthcheckRun''
+erzeugt. Der Upload wird danach mit Status „Ausgewertet“ und der ''run_id'' des neuen Laufs
+verknüpft (oder mit Status „Fehler“ inkl. Fehlermeldung, falls die Auswertung scheitert).
+
+{{:itomig-code:itomig-healthreport:pasted:screenshot_eingegangene_uploads.png}}
+
+==== Datenmodell ====
+
+^ Klasse ^ DB-Tabelle ^ Zweck ^
+| HealthcheckRun | itomig_healthreport_run | Ein ausgewerteter Healthcheck-Lauf (Kunde, Umgebung, Gesamt-Ampel, Original-ZIP + Management-Summary als Blob) |
+| HealthcheckModuleReport | itomig_healthreport_modul | Der ausgewertete Report eines einzelnen Moduls innerhalb eines Laufs (1:n zu HealthcheckRun) |
+| HealthcheckUpload | itomig_healthreport_upload | Ein von einem Kunden über das Portal hochgeladenes ZIP, das noch auf Auswertung wartet |
+
+<note>''HealthcheckUpload'' referenziert ''HealthcheckRun'' erst, nachdem die Auswertung
+manuell angestoßen wurde (''run_id'' bleibt bis dahin leer).</note>

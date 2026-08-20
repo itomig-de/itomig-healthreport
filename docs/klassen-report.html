@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ITOMIG Healthreport – Neue iTop-Klassen</title>
+<style>
+    :root {
+        --itomig-deep-cyan: #074552;
+        --itomig-strong-cyan: #2794ab;
+        --itomig-vivid-cyan: #20d6fc;
+        --itomig-dark-gray: #454545;
+        --itomig-orange: #e3791d;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--itomig-dark-gray);
+        line-height: 1.6;
+        background: #f8fafb;
+    }
+    .header {
+        background: linear-gradient(135deg, var(--itomig-deep-cyan), var(--itomig-strong-cyan));
+        color: #fff;
+        padding: 2.5rem 2rem;
+        text-align: center;
+    }
+    .header h1 { font-size: 1.9rem; margin-bottom: 0.3rem; }
+    .header p { font-size: 0.95rem; opacity: 0.9; }
+    .container { max-width: 980px; margin: 0 auto; padding: 2rem; }
+    .intro {
+        background: #fff;
+        border-radius: 8px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        border-left: 4px solid var(--itomig-strong-cyan);
+    }
+    h2 {
+        color: var(--itomig-deep-cyan);
+        font-size: 1.3rem;
+        margin: 2.5rem 0 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid var(--itomig-strong-cyan);
+    }
+    .class-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem 1.75rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(7,69,82,0.08);
+        border-left: 5px solid var(--itomig-deep-cyan);
+    }
+    .class-card h3 {
+        color: var(--itomig-deep-cyan);
+        font-size: 1.15rem;
+        margin-bottom: 0.25rem;
+    }
+    .class-card .db-table {
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        font-size: 0.8rem;
+        color: #777;
+        margin-bottom: 1rem;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+    th, td {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #e5e9ea;
+        vertical-align: top;
+    }
+    th {
+        background: var(--itomig-deep-cyan);
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+    code {
+        background: #f0f4f5;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.85em;
+        color: var(--itomig-deep-cyan);
+    }
+    .badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        color: #fff;
+        background: var(--itomig-strong-cyan);
+    }
+    .badge.blob { background: var(--itomig-orange); }
+    .badge.key { background: var(--itomig-deep-cyan); }
+    .badge.enum { background: #28a745; }
+    .relation {
+        text-align: center;
+        margin: 1.5rem 0 2.5rem;
+        font-size: 0.95rem;
+        color: var(--itomig-deep-cyan);
+    }
+    .relation .box {
+        display: inline-block;
+        background: #fff;
+        border: 2px solid var(--itomig-strong-cyan);
+        border-radius: 8px;
+        padding: 0.75rem 1.25rem;
+        font-weight: 600;
+        margin: 0 0.5rem;
+    }
+    .relation .arrow { font-size: 1.3rem; color: var(--itomig-orange); margin: 0 0.5rem; }
+    ol.flow {
+        background: #fff;
+        border-radius: 8px;
+        padding: 1.25rem 1.75rem 1.25rem 2.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    ol.flow li { margin-bottom: 0.75rem; }
+    ol.flow li:last-child { margin-bottom: 0; }
+    .footer {
+        text-align: center;
+        padding: 2rem;
+        font-size: 0.8rem;
+        color: #999;
+        border-top: 1px solid #e0e0e0;
+        margin-top: 3rem;
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Neue iTop-Klassen der Extension „itomig-healthreport"</h1>
+    <p>HealthcheckRun, HealthcheckModuleReport &amp; HealthcheckUpload – Datenmodell und Funktionsweise</p>
+</div>
+
+<div class="container">
+
+    <div class="intro">
+        Die Extension <code>itomig-healthreport</code> ergänzt das iTop-Datenmodell um drei neue
+        Klassen, um Healthcheck-Auswertungen dauerhaft als iTop-Objekte zu speichern statt nur als
+        Dateien auf der Platte. Damit bekommt jeder Lauf eine Historie, eine Detailseite,
+        Such-/Listenansicht und Zugriffskontrolle direkt über iTop. Seit Version 26.3.0 kommt
+        <code>HealthcheckUpload</code> hinzu: der Eingangs-Briefkasten für ZIPs, die Kunden selbst
+        über das Portal hochladen, bevor ITOMIG sie auswertet.
+    </div>
+
+    <div class="relation">
+        <span class="box">HealthcheckUpload</span>
+        <span class="arrow">n&nbsp;&rarr;&nbsp;1</span>
+        <span class="box">HealthcheckRun</span>
+        <span class="arrow">1&nbsp;&rarr;&nbsp;n</span>
+        <span class="box">HealthcheckModuleReport</span>
+    </div>
+
+    <h2>Klasse: HealthcheckRun</h2>
+    <div class="class-card">
+        <h3>Ein ausgewerteter Healthcheck-Lauf</h3>
+        <div class="db-table">DB-Tabelle: itomig_healthreport_run</div>
+        <p>
+            Repräsentiert genau einen ZIP-Upload: Kunde, Umgebung, Zeitpunkt, Versionen sowie das
+            Gesamtergebnis über alle Module hinweg (Ampel + Anzahl ausgewerteter Module). Das
+            Original-ZIP und das Management-Summary liegen als Datei-Anhänge (Blobs) direkt am
+            Objekt.
+        </p>
+        <table>
+            <thead>
+                <tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>kunde</code></td><td>String</td><td>Kundenname aus dem manifest.json des ZIPs</td></tr>
+                <tr><td><code>umgebung</code></td><td>String</td><td>Umgebung (z.&nbsp;B. Produktion, Test)</td></tr>
+                <tr><td><code>zeitpunkt</code></td><td>DateTime</td><td>Zeitpunkt der Datensammlung beim Kunden</td></tr>
+                <tr><td><code>itop_version</code></td><td>String</td><td>iTop-Version der Kundeninstanz</td></tr>
+                <tr><td><code>db_server_version</code></td><td>String</td><td>DB-Server-Version der Kundeninstanz</td></tr>
+                <tr><td><code>extension_version</code></td><td>String</td><td>Version der Collector-Extension <code>itomig-healthcheck</code></td></tr>
+                <tr><td><code>ampel_gesamt</code></td><td><span class="badge enum">Enum</span></td><td>rot / gelb / grün – höchste Ampel aller Module</td></tr>
+                <tr><td><code>modul_anzahl</code></td><td>Integer</td><td>Anzahl erfolgreich ausgewerteter Module</td></tr>
+                <tr><td><code>zip_datei</code></td><td><span class="badge blob">Blob</span></td><td>Original-Upload (zur Nachvollziehbarkeit/Re-Auswertung)</td></tr>
+                <tr><td><code>summary_html</code></td><td><span class="badge blob">Blob</span></td><td>Management-Summary als fertiges HTML</td></tr>
+                <tr><td><code>summary_json</code></td><td><span class="badge blob">Blob</span></td><td>Management-Summary als JSON (maschinenlesbar)</td></tr>
+                <tr><td><code>modul_reports</code></td><td>LinkedSet</td><td>Alle zugehörigen <code>HealthcheckModuleReport</code>-Objekte (Tab auf der Detailseite)</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Klasse: HealthcheckModuleReport</h2>
+    <div class="class-card">
+        <h3>Der Report eines einzelnen Moduls innerhalb eines Laufs</h3>
+        <div class="db-table">DB-Tabelle: itomig_healthreport_modul</div>
+        <p>
+            Für jedes der 9 ausgewerteten Module (Design, Daten, Synchro, Integration, System,
+            Datenschutz, Tabellen-Übersicht, Spalten-Befüllung, Objekt-Aktualität) entsteht pro
+            Lauf genau ein <code>HealthcheckModuleReport</code>, verknüpft mit seinem
+            <code>HealthcheckRun</code> über den Schlüssel <code>run_id</code>.
+        </p>
+        <table>
+            <thead>
+                <tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>run_id</code></td><td><span class="badge key">ExternalKey</span></td><td>Verweis auf den zugehörigen HealthcheckRun (Löschen des Laufs löscht auch seine Modul-Reports)</td></tr>
+                <tr><td><code>kategorie</code></td><td>String</td><td>Interner Kategorie-Schlüssel, z.&nbsp;B. <code>system</code>, <code>design</code></td></tr>
+                <tr><td><code>label</code></td><td>String</td><td>Sprechender Anzeigename, z.&nbsp;B. „Server- &amp; Systemzustand"</td></tr>
+                <tr><td><code>ampel</code></td><td><span class="badge enum">Enum</span></td><td>rot / gelb / grün – höchster Schweregrad der Befunde dieses Moduls</td></tr>
+                <tr><td><code>befund_anzahl</code></td><td>Integer</td><td>Anzahl gefundener Befunde in diesem Modul</td></tr>
+                <tr><td><code>report_html</code></td><td><span class="badge blob">Blob</span></td><td>Vollständiger Detail-Report als HTML</td></tr>
+                <tr><td><code>report_json</code></td><td><span class="badge blob">Blob</span></td><td>Detail-Report als JSON</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Klasse: HealthcheckUpload</h2>
+    <div class="class-card">
+        <h3>Ein von einem Kunden über das Portal hochgeladenes ZIP, noch nicht ausgewertet</h3>
+        <div class="db-table">DB-Tabelle: itomig_healthreport_upload</div>
+        <p>
+            Eingangs-Briefkasten für Portal-Uploads: legt nur das ZIP samt Metadaten ab
+            (<code>status</code> = „Neu"). Bewusst getrennt von <code>HealthcheckRun</code>, weil
+            dessen Pflichtfelder (Ampel, Modul-Anzahl, Zeitpunkt der Datensammlung) erst aus der
+            Auswertung entstehen und beim Portal-Upload noch nicht bekannt sind. Erst wenn ITOMIG
+            in der Konsole „Auswerten" klickt, entsteht daraus ein <code>HealthcheckRun</code> –
+            <strong>der Portal-Upload selbst löst keine Auswertung aus.</strong>
+        </p>
+        <table>
+            <thead>
+                <tr><th>Feld</th><th>Typ</th><th>Bedeutung</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><code>org_id</code></td><td><span class="badge key">ExternalKey</span></td><td>Organisation (Kunde) des angemeldeten Portal-Kontakts</td></tr>
+                <tr><td><code>hochgeladen_von_id</code></td><td><span class="badge key">ExternalKey</span></td><td>Person, die den Upload durchgeführt hat</td></tr>
+                <tr><td><code>eingegangen_am</code></td><td>DateTime</td><td>Zeitpunkt des Portal-Uploads</td></tr>
+                <tr><td><code>dateiname</code></td><td>String</td><td>Original-Dateiname des hochgeladenen ZIPs</td></tr>
+                <tr><td><code>zip_datei</code></td><td><span class="badge blob">Blob</span></td><td>Das hochgeladene ZIP selbst</td></tr>
+                <tr><td><code>status</code></td><td><span class="badge enum">Enum</span></td><td>neu / ausgewertet / fehler</td></tr>
+                <tr><td><code>run_id</code></td><td><span class="badge key">ExternalKey</span></td><td>Verweis auf den daraus erzeugten <code>HealthcheckRun</code> (erst nach Auswertung gesetzt)</td></tr>
+                <tr><td><code>fehlermeldung</code></td><td>Text</td><td>Fehlertext, falls die Auswertung fehlgeschlagen ist</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>Wie die Objekte entstehen</h2>
+    <ol class="flow">
+        <li>Ein Admin lädt im iTop-Menü <strong>„Healthcheck &rarr; Healthcheck hochladen"</strong> ein Collector-ZIP hoch – <strong>oder</strong> ein Kunde lädt es selbst über die Portal-Brick „Healthcheck hochladen" hoch (dann entsteht zunächst nur ein <code>HealthcheckUpload</code>, siehe unten).</li>
+        <li>Beim Admin-Upload reicht der Controller (<code>HealthReportController</code>) die Datei sofort an <code>ReportPipeline</code> weiter. Diese bindet die bestehende, iTop-unabhängige Auswertungs-Engine (<code>lib/</code>, <code>reporters/</code>) ein, entpackt das ZIP und lässt jedes enthaltene Modul auswerten.</li>
+        <li><code>RunPersister</code> nimmt das Ergebnis der Pipeline und legt daraus <strong>ein <code>HealthcheckRun</code></strong>-Objekt sowie <strong>je Modul ein <code>HealthcheckModuleReport</code></strong>-Objekt an – inklusive aller Blobs (ZIP, Summary, Detail-Reports).</li>
+        <li>Der Admin wird automatisch auf die Detailseite des neuen <code>HealthcheckRun</code> weitergeleitet. Dort zeigt iTop nativ alle Felder, die Ampel-Übersicht sowie einen Tab mit allen <code>HealthcheckModuleReport</code>-Objekten. Reports lassen sich direkt aus den Blob-Feldern im Browser öffnen.</li>
+        <li>Über das Menü <strong>„Healthcheck &rarr; Healthcheck-Läufe"</strong> lässt sich jederzeit die komplette Historie aller ausgewerteten Läufe durchsuchen.</li>
+    </ol>
+
+    <h2>Portal-Upload durch Kunden</h2>
+    <ol class="flow">
+        <li>Ein Kunde lädt im Portal über die Brick „Healthcheck hochladen" sein Collector-ZIP hoch. Der Portal-Controller (<code>HealthReportUploadBrickController</code>) legt daraus lediglich ein <code>HealthcheckUpload</code> mit Status „Neu" an – <strong>es findet keine Auswertung statt.</strong></li>
+        <li>ITOMIG sichtet eingegangene Uploads in der Konsole unter <strong>„Healthcheck &rarr; Eingegangene Uploads"</strong> und stößt die Auswertung dort gezielt per Klick auf „Auswerten" an.</li>
+        <li><code>UploadProcessor</code> nutzt dabei dieselbe <code>ReportPipeline</code>/<code>RunPersister</code>-Kette wie der Admin-Upload und erzeugt so ganz normal einen <code>HealthcheckRun</code>. Anschließend wird der Upload auf Status „Ausgewertet" gesetzt und über <code>run_id</code> mit dem neuen Lauf verknüpft (oder auf „Fehler" mit Fehlertext, falls die Auswertung scheitert).</li>
+        <li>Ohne installiertes Portal (<code>itop-portal-base</code>) bleibt die Extension unverändert nutzbar – die Portal-Bestandteile schalten sich nur zu, wenn das Portal vorhanden ist.</li>
+    </ol>
+
+</div>
+
+<div class="footer">
+    &copy; 2026 ITOMIG GmbH &middot; itomig-healthreport-extension<br>
+    Dieser Report beschreibt den Stand der Klassen inkl. Portal-Upload (Version 26.3.0).
+</div>
+
+</body>
+</html>

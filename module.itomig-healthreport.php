@@ -5,7 +5,7 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'itomig-healthreport/1.0.0',
+	'itomig-healthreport/26.3.0',
 	array(
 		// Identification
 		//
@@ -15,7 +15,9 @@ SetupWebPage::AddModule(
 		// Setup
 		//
 		'dependencies' => array(
-
+			// Definiert Profil "Portal user" (id=2), auf das user_rights unten
+			// zugreift. Modul ist in Standard-iTop-Installationen "mandatory".
+			'itop-profiles-itil/3.2.0',
 		),
 		'mandatory' => false,
 		'visible' => true,
@@ -26,6 +28,9 @@ SetupWebPage::AddModule(
 			'vendor/autoload.php',
 			'model.itomig-healthreport.php',
 			'src/Controller/HealthReportController.php',
+			// Registriert die Portal-Route der Upload-Brick; wirkt nur,
+			// wenn itop-portal-base installiert ist (siehe Datei selbst).
+			'portal-bootstrap.php',
 		),
 		'webservice' => array(
 

@@ -10,17 +10,17 @@ require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
 function reportSynchro(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
-    $maxFullLoadHours = (int) ($daten['konfiguration']['max_full_load_hours']
+    $daten = $raw['data'] ?? [];
+    $maxFullLoadHours = (int) ($daten['config']['max_full_load_hours']
         ?? $config['synchro']['max_full_load_hours'] ?? 24);
-    $fehlerTage = (int) ($daten['konfiguration']['fehler_tage']
+    $fehlerTage = (int) ($daten['config']['error_days']
         ?? $config['synchro']['fehler_tage'] ?? 30);
 
-    $datenquellenItems = bewerteDatenquellen($report, $daten['datenquellen'] ?? []);
+    $datenquellenItems = bewerteDatenquellen($report, $daten['data_sources'] ?? []);
     bewerteGesperrteAttribute($report, $daten['sync_attribute'] ?? []);
     bewerteReconciliationKeys($report, $datenquellenItems);
     bewerteSyncFehler($report, $daten['sync_logs'] ?? [], $fehlerTage);
@@ -32,12 +32,12 @@ function reportSynchro(array $raw, array $config): HealthcheckReport
 
 function bewerteDatenquellen(HealthcheckReport $report, array $datenquellen): array
 {
-    if (($datenquellen['fehler'] ?? null) !== null) {
+    if (($datenquellen['error'] ?? null) !== null) {
         $report->addFinding(
             'synchro',
             'Datenquellen konnten nicht abgerufen werden',
             'critical',
-            'Fehler beim Abruf der Datenquellen: ' . $datenquellen['fehler']
+            'Fehler beim Abruf der Datenquellen: ' . $datenquellen['error']
         );
         return [];
     }
@@ -109,13 +109,13 @@ function bewerteDatenquellen(HealthcheckReport $report, array $datenquellen): ar
 
 function bewerteGesperrteAttribute(HealthcheckReport $report, array $syncAttribute): void
 {
-    if (($syncAttribute['fehler'] ?? null) !== null) {
+    if (($syncAttribute['error'] ?? null) !== null) {
         $report->addFinding(
             'synchro',
             'Gesperrte Attribute konnten nicht geprüft werden',
             'info',
             'Die Klasse SynchroAttribute ist möglicherweise nicht über die API verfügbar: '
-            . $syncAttribute['fehler']
+            . $syncAttribute['error']
         );
         return;
     }
@@ -200,12 +200,12 @@ function bewerteReconciliationKeys(HealthcheckReport $report, array $datenquelle
 
 function bewerteSyncFehler(HealthcheckReport $report, array $syncLogs, int $fehlerTage): void
 {
-    if (($syncLogs['fehler'] ?? null) !== null) {
+    if (($syncLogs['error'] ?? null) !== null) {
         $report->addFinding(
             'synchro',
             'Sync-Fehler konnten nicht analysiert werden',
             'warning',
-            'Fehler beim Abruf der Sync-Logs: ' . $syncLogs['fehler']
+            'Fehler beim Abruf der Sync-Logs: ' . $syncLogs['error']
         );
         return;
     }

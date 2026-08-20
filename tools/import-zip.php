@@ -56,18 +56,18 @@ function importZip(string $zipPath, array $config): array
         throw new \RuntimeException('manifest.json ist kein gültiges JSON: ' . $e->getMessage());
     }
 
-    $kundeRaw = (string) ($manifest['kunde'] ?? 'unbekannt');
+    $kundeRaw = (string) ($manifest['customer'] ?? 'unbekannt');
     $kundeSlug = HealthcheckUtils::sanitizeFilename($kundeRaw);
     if ($kundeSlug === '') {
         $kundeSlug = 'unbekannt';
     }
-    $umgebung = (string) ($manifest['umgebung'] ?? '');
+    $umgebung = (string) ($manifest['environment'] ?? '');
 
     // Kunde in Config-Kopie überschreiben für die Pfad-Resolver
     $config['kunde'] = ['name' => $kundeSlug, 'umgebung' => $umgebung];
 
     $ts = parseManifestTimestamp((string) ($manifest['timestamp'] ?? ''));
-    $module = $manifest['module'] ?? array_keys(HealthcheckModules::all());
+    $module = $manifest['modules'] ?? array_keys(HealthcheckModules::all());
 
     HealthcheckUtils::log("Import-Quelle: $zipPath", 'info');
     HealthcheckUtils::log("Kunde: $kundeSlug · Umgebung: $umgebung · Timestamp: $ts", 'info');
@@ -89,8 +89,8 @@ function importZip(string $zipPath, array $config): array
             continue;
         }
 
-        if (!is_array($data) || !isset($data['meta'], $data['daten'])) {
-            HealthcheckUtils::log("Modul-JSON $jsonName hat unerwartetes Schema (meta/daten fehlt)", 'warning');
+        if (!is_array($data) || !isset($data['meta'], $data['data'])) {
+            HealthcheckUtils::log("Modul-JSON $jsonName hat unerwartetes Schema (meta/data fehlt)", 'warning');
             continue;
         }
 

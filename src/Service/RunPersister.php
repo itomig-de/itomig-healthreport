@@ -15,14 +15,16 @@ class RunPersister
 {
     /**
      * @param array $pipelineResult Rueckgabe von ReportPipeline::run()
+     * @param int $iOrgId           ID der im Upload-Formular ausgewaehlten Organisation (Kunde)
      * @param string $zipBinary     Binaerinhalt des hochgeladenen ZIP (fuer das zip_datei-Blob)
      * @param string $zipFilename   Original-Dateiname des Uploads
      * @return int ID des angelegten HealthcheckRun
      */
-    public function persist(array $pipelineResult, string $zipBinary, string $zipFilename): int
+    public function persist(array $pipelineResult, int $iOrgId, string $zipBinary, string $zipFilename): int
     {
         $oRun = new HealthcheckRun();
-        $oRun->Set('kunde', $pipelineResult['kunde']);
+        $oRun->Set('kunde_id', $iOrgId);
+        $oRun->Set('zip_kunde_name', $pipelineResult['kunde']);
         $oRun->Set('umgebung', $pipelineResult['umgebung']);
         $oRun->Set('zeitpunkt', $this->toItopDateTime($pipelineResult['zeitpunkt']));
         $oRun->Set('itop_version', (string) ($pipelineResult['itop_version'] ?? ''));
@@ -33,7 +35,7 @@ class RunPersister
         $oRun->Set('zip_datei', new ormDocument($zipBinary, 'application/zip', $zipFilename));
         $oRun->Set('summary_html', new ormDocument($pipelineResult['summary_html'], 'text/html', 'summary.html'));
         $oRun->Set('summary_json', new ormDocument($pipelineResult['summary_json'], 'application/json', 'summary.json'));
-        $iRunId = $oRun->DBInsert();
+        $iRunId = (int) $oRun->DBInsert();
 
         foreach ($pipelineResult['module'] as $aModule) {
             $oModuleReport = new HealthcheckModuleReport();

@@ -10,21 +10,21 @@ require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
 function reportIntegration(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
-    $cfg = $daten['konfiguration'] ?? [];
+    $daten = $raw['data'] ?? [];
+    $cfg = $daten['config'] ?? [];
 
     bewerteUserAccounts($report, $daten['user_accounts'] ?? []);
-    if ($cfg['pruefe_mail'] ?? true) {
-        bewerteMailAktionen($report, $daten['mail_aktionen'] ?? []);
+    if ($cfg['check_mail'] ?? true) {
+        bewerteMailAktionen($report, $daten['mail_actions'] ?? []);
     }
-    if ($cfg['pruefe_webhooks'] ?? true) {
+    if ($cfg['check_webhooks'] ?? true) {
         bewerteWebhooks($report, $daten['webhooks'] ?? []);
     }
-    if ($cfg['pruefe_incoming_mail'] ?? true) {
+    if ($cfg['check_incoming_mail'] ?? true) {
         bewerteIncomingMail($report, $daten['incoming_mail'] ?? []);
     }
     bewerteAiIntegration($report, $daten['ai_integration'] ?? []);
@@ -34,20 +34,20 @@ function reportIntegration(array $raw, array $config): HealthcheckReport
 
 function bewerteUserAccounts(HealthcheckReport $report, array $users): void
 {
-    if (($users['fehler'] ?? null) !== null) {
+    if (($users['error'] ?? null) !== null) {
         $report->addFinding(
             'integration',
             'User-Accounts konnten nicht geprüft werden',
             'warning',
-            'Fehler beim Abruf der User-Accounts: ' . $users['fehler']
+            'Fehler beim Abruf der User-Accounts: ' . $users['error']
         );
         return;
     }
 
-    $aktiv = (int) ($users['aktiv'] ?? 0);
-    $deaktiviert = (int) ($users['deaktiviert'] ?? 0);
-    $admins = (int) ($users['mit_admin'] ?? 0);
-    $ohneKontakt = (int) ($users['ohne_kontakt'] ?? 0);
+    $aktiv = (int) ($users['active'] ?? 0);
+    $deaktiviert = (int) ($users['disabled'] ?? 0);
+    $admins = (int) ($users['with_admin'] ?? 0);
+    $ohneKontakt = (int) ($users['without_contact'] ?? 0);
 
     $report->setCategorySummary(
         'integration',
@@ -94,18 +94,18 @@ function bewerteUserAccounts(HealthcheckReport $report, array $users): void
 
 function bewerteMailAktionen(HealthcheckReport $report, array $mail): void
 {
-    if (($mail['fehler'] ?? null) !== null) {
+    if (($mail['error'] ?? null) !== null) {
         $report->addFinding(
             'integration',
             'Benachrichtigungen konnten nicht geprüft werden',
             'info',
-            'Fehler beim Abruf der Benachrichtigungskonfiguration: ' . $mail['fehler']
+            'Fehler beim Abruf der Benachrichtigungskonfiguration: ' . $mail['error']
         );
         return;
     }
 
     $triggerCount = (int) ($mail['trigger_count'] ?? 0);
-    $aktionen = $mail['aktionen'] ?? [];
+    $aktionen = $mail['actions'] ?? [];
     $actionCount = count($aktionen);
 
     if ($triggerCount === 0 && $actionCount === 0) {
@@ -160,7 +160,7 @@ function bewerteWebhooks(HealthcheckReport $report, array $webhooks): void
     }
     $proKlasse = [];
     foreach ($items as $w) {
-        $proKlasse[$w['klasse']][] = $w;
+        $proKlasse[$w['class']][] = $w;
     }
     foreach ($proKlasse as $klasse => $list) {
         $details = [];
@@ -182,7 +182,7 @@ function bewerteWebhooks(HealthcheckReport $report, array $webhooks): void
 
 function bewerteIncomingMail(HealthcheckReport $report, array $incoming): void
 {
-    if (($incoming['fehler'] ?? null) !== null) {
+    if (($incoming['error'] ?? null) !== null) {
         $report->addFinding(
             'integration',
             'Incoming Mail nicht prüfbar',

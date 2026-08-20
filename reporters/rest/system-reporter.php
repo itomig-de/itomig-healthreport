@@ -10,20 +10,21 @@ require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
 function reportSystem(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['kunde'] ?? ($config['kunde']['name'] ?? '');
-    $umgebung = $raw['meta']['umgebung'] ?? ($config['kunde']['umgebung'] ?? '');
+    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
-    $daten = $raw['daten'] ?? [];
-    $cfg = $daten['konfiguration'] ?? [];
+    $daten = $raw['data'] ?? [];
+    $cfg = $daten['config'] ?? [];
 
-    bewerteItopVersion($report, $daten['itop_version'] ?? null);
-    bewerteModulInstallationen($report, $daten['modul_installations'] ?? []);
-    if ($cfg['pruefe_php_config'] ?? true) {
-        bewertePhpKonfiguration($report);
+    $itopVersion = $raw['meta']['itop_version'] ?? null;
+    bewerteItopVersion($report, $itopVersion !== null ? (string) $itopVersion : null);
+    bewerteModulInstallationen($report, $daten['module_installations'] ?? []);
+    if ($cfg['check_php_config'] ?? true) {
+        bewertePhpKonfiguration($report, $daten['php'] ?? []);
     }
-    if ($cfg['pruefe_db'] ?? true) {
-        bewerteDatenbankUebersicht($report, $daten['hauptklassen'] ?? []);
+    if ($cfg['check_db'] ?? true) {
+        bewerteDatenbankUebersicht($report, $daten['main_classes'] ?? []);
     }
 
     return $report;
@@ -78,13 +79,13 @@ function bewerteItopVersion(HealthcheckReport $report, ?string $version): void
 
 function bewerteModulInstallationen(HealthcheckReport $report, array $modules): void
 {
-    if (($modules['fehler'] ?? null) !== null) {
+    if (($modules['error'] ?? null) !== null) {
         $report->addFinding(
             'system',
             'Modul-Versionen nicht prüfbar',
             'info',
             'Die Klasse ModuleInstallation ist möglicherweise nicht über die API zugänglich: '
-            . $modules['fehler']
+            . $modules['error']
         );
         return;
     }
@@ -139,8 +140,14 @@ function bewerteModulInstallationen(HealthcheckReport $report, array $modules): 
     );
 }
 
-function bewertePhpKonfiguration(HealthcheckReport $report): void
+function bewertePhpKonfiguration(HealthcheckReport $report, array $php): void
 {
+    $version = $php['version'] ?? null;
+    if ($version !== null && $version !== '') {
+        bewertePhpVersion($report, (string) $version, (string) ($php['sapi'] ?? ''));
+        bewertePhpExtensions($report, $php['extensions'] ?? []);
+    }
+
     $empfehlungen = [
         ['Parameter' => 'PHP Version', 'Empfehlung' => '>= 8.1 (für iTop 3.x)'],
         ['Parameter' => 'memory_limit', 'Empfehlung' => '>= 256M'],
@@ -156,9 +163,65 @@ function bewertePhpKonfiguration(HealthcheckReport $report): void
         'system',
         'PHP-Konfiguration (manuelle Prüfung)',
         'info',
-        'Die PHP-Konfiguration kann über die REST API nicht vollständig geprüft werden. '
-        . 'Empfehlung: Prüfen Sie die folgenden Parameter in der php.ini bzw. über phpinfo() auf dem Server.',
+        'Die zentralen php.ini-Werte (memory_limit, max_execution_time, …) werden vom Collector '
+        . 'nicht mitgeliefert. Empfehlung: Prüfen Sie die folgenden Parameter in der php.ini '
+        . 'bzw. über phpinfo() auf dem Server.',
         $empfehlungen
+    );
+}
+
+function bewertePhpVersion(HealthcheckReport $report, string $version, string $sapi): void
+{
+    $severity = 'ok';
+    $hinweis = "PHP $version wird für iTop 3.2 unterstützt (empfohlen: 8.1 - 8.3).";
+    if (version_compare($version, '8.1', '<')) {
+        $severity = 'critical';
+        $hinweis = "PHP $version wird von iTop 3.2 nicht unterstützt (mindestens 8.1 erforderlich). "
+            . 'Ein Upgrade der PHP-Version ist dringend erforderlich.';
+    } elseif (version_compare($version, '8.4', '>=')) {
+        $severity = 'warning';
+        $hinweis = "PHP $version ist neuer als von iTop 3.2 unterstützt (8.1 - 8.3). "
+            . 'Prüfen Sie, ob eine ältere PHP-Version verwendet werden sollte.';
+    }
+
+    $report->addFinding(
+        'system',
+        "PHP-Version $version",
+        $severity,
+        $hinweis,
+        [
+            'Version' => $version,
+            'SAPI'    => $sapi !== '' ? $sapi : 'unbekannt',
+        ]
+    );
+}
+
+function bewertePhpExtensions(HealthcheckReport $report, array $extensions): void
+{
+    $vorhanden = array_map('strtolower', $extensions);
+    $benoetigt = ['json', 'zip', 'mysqli', 'mbstring', 'curl', 'gd', 'openssl', 'iconv', 'xml', 'soap'];
+
+    $details = [];
+    $fehlend = [];
+    foreach ($benoetigt as $ext) {
+        $ok = in_array($ext, $vorhanden, true);
+        $details[] = ['Extension' => $ext, 'Status' => $ok ? 'Vorhanden' : 'Fehlt'];
+        if (!$ok) {
+            $fehlend[] = $ext;
+        }
+    }
+
+    $severity = empty($fehlend) ? 'ok' : 'warning';
+    $text = empty($fehlend)
+        ? 'Alle für iTop relevanten PHP-Extensions sind geladen (' . count($extensions) . ' Extensions insgesamt).'
+        : 'Folgende für iTop relevante PHP-Extensions fehlen: ' . implode(', ', $fehlend) . '.';
+
+    $report->addFinding(
+        'system',
+        'PHP-Extensions',
+        $severity,
+        $text,
+        $details
     );
 }
 
@@ -167,7 +230,7 @@ function bewerteDatenbankUebersicht(HealthcheckReport $report, array $hauptklass
     $details = [];
     $total = 0;
     foreach ($hauptklassen as $info) {
-        if (($info['fehler'] ?? null) !== null || ($info['count'] ?? null) === null) {
+        if (($info['error'] ?? null) !== null || ($info['count'] ?? null) === null) {
             continue;
         }
         $details[] = [

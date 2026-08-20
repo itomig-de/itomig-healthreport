@@ -41,15 +41,15 @@ class HealthcheckReport
     public const CATEGORY_LABELS = [
         // REST API Tier
         'design'      => 'Qualität des Datenmodells',
-        'daten'       => 'Datenqualität',
+        'data'        => 'Datenqualität',
         'synchro'     => 'Konsistenz der Datenquellen',
         'integration' => 'Integration & Benachrichtigung',
         'system'      => 'Server- & Systemzustand',
-        'datenschutz' => 'Datenschutz',
+        'privacy'     => 'Datenschutz',
         // DB Tier
-        'tabellen'    => 'DB: Tabellen-Übersicht',
-        'befuellung'  => 'DB: Spalten-Befüllung',
-        'aktualitaet' => 'DB: Objekt-Aktualität',
+        'tables'      => 'DB: Tabellen-Übersicht',
+        'columns'     => 'DB: Spalten-Befüllung',
+        'freshness'   => 'DB: Objekt-Aktualität',
     ];
 
     public function __construct(string $kundenname, string $umgebung = '')
@@ -126,12 +126,12 @@ class HealthcheckReport
     {
         $data = [
             'meta' => [
-                'kunde'     => $this->kundenname,
-                'umgebung'  => $this->umgebung,
-                'zeitpunkt' => $this->timestamp,
-                'version'   => '1.0.0',
+                'customer'    => $this->kundenname,
+                'environment' => $this->umgebung,
+                'timestamp'   => $this->timestamp,
+                'version'     => '1.0.0',
             ],
-            'ergebnis' => [],
+            'results' => [],
         ];
 
         foreach (self::CATEGORY_LABELS as $key => $label) {
@@ -139,12 +139,12 @@ class HealthcheckReport
                 continue;
             }
 
-            $data['ergebnis'][$key] = [
-                'label'           => $label,
-                'ampel'           => $this->getCategorySeverity($key),
-                'zusammenfassung' => $this->summaries[$key] ?? null,
-                'befunde'         => $this->findings[$key] ?? [],
-                'statistik'       => [
+            $data['results'][$key] = [
+                'label'      => $label,
+                'status'     => $this->getCategorySeverity($key),
+                'summary'    => $this->summaries[$key] ?? null,
+                'findings'   => $this->findings[$key] ?? [],
+                'statistics' => [
                     'critical' => $this->countBySeverity($key, 'critical'),
                     'warning'  => $this->countBySeverity($key, 'warning'),
                     'info'     => $this->countBySeverity($key, 'info'),

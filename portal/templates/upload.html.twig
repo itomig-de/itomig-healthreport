@@ -1,0 +1,93 @@
+{# ITOMIG Healthreport - Portal-Upload-Brick #}
+{% extends 'itop-portal-base/portal/templates/bricks/layout.html.twig' %}
+
+{% block pMainHeaderTitle %}
+    {{ 'Brick:Portal:HealthReportUpload:Title'|dict_s }}
+{% endblock %}
+
+{% block pMainHeaderActions %}
+{% endblock %}
+
+{% block pMainContentHolder %}
+    <style>
+        .itomig-healthreport-portal .panel-title { color: #074552; }
+        .itomig-healthreport-portal .btn-itomig-primary {
+            background-color: #e3791d;
+            border-color: #e3791d;
+            color: #ffffff;
+        }
+        .itomig-healthreport-portal .btn-itomig-primary:hover,
+        .itomig-healthreport-portal .btn-itomig-primary:focus {
+            background-color: #074552;
+            border-color: #074552;
+            color: #ffffff;
+        }
+    </style>
+
+    <div class="itomig-healthreport-portal">
+
+        {% if not bHasOrg %}
+            <div class="alert alert-danger" role="alert">
+                {{ 'Itomig:HealthReport:Error:NoOrganization'|dict_s }}
+            </div>
+        {% else %}
+
+            {% if sMessage is not empty %}
+                <div class="alert alert-success" role="alert">{{ sMessage }}</div>
+            {% endif %}
+            {% if sErrorMessage is not empty %}
+                <div class="alert alert-danger" role="alert">{{ sErrorMessage }}</div>
+            {% endif %}
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ 'Itomig:HealthReport:UI:UploadLabel'|dict_s }}</h3>
+                </div>
+                <div class="panel-body">
+                    <p>{{ 'Itomig:HealthReport:Portal:Intro'|dict_s }}</p>
+                    <form action="{{ sSubmitUrl }}" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="transaction_id" value="{{ sTransactionId }}">
+                        <div class="form-group">
+                            <input type="file" name="zip" accept=".zip,application/zip" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-itomig-primary">
+                            {{ 'Itomig:HealthReport:UI:Submit'|dict_s }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title">{{ 'Itomig:HealthReport:Portal:OwnUploads'|dict_s }}</h3>
+                </div>
+                <div class="panel-body">
+                    {% if aUploads|length > 0 %}
+                        <table class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>{{ 'Class:HealthcheckUpload/Attribute:eingegangen_am'|dict_s }}</th>
+                                    <th>{{ 'Class:HealthcheckUpload/Attribute:dateiname'|dict_s }}</th>
+                                    <th>{{ 'Class:HealthcheckUpload/Attribute:status'|dict_s }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for aUpload in aUploads %}
+                                    <tr>
+                                        <td>{{ aUpload.eingegangen_am }}</td>
+                                        <td>{{ aUpload.dateiname }}</td>
+                                        <td>{{ ('Class:HealthcheckUpload/Attribute:status/Value:' ~ aUpload.status)|dict_s }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="text-center">{{ 'Brick:Portal:Manage:Table:NoData'|dict_s }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+        {% endif %}
+
+    </div>
+{% endblock %}

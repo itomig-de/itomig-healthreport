@@ -6,6 +6,8 @@ namespace Itomig\iTop\Extension\HealthReport\Controller;
 use Combodo\iTop\Application\TwigBase\Controller\Controller;
 use Itomig\iTop\Extension\HealthReport\Service\ReportPipeline;
 use Itomig\iTop\Extension\HealthReport\Service\RunPersister;
+use Itomig\iTop\Extension\HealthReport\Service\UploadProcessor;
+use Itomig\iTop\Extension\HealthReport\Service\ZipUploadValidator;
 use utils;
 
 /**
@@ -23,20 +25,13 @@ class HealthReportController extends Controller
 {
     public const ROUTE_NAMESPACE = 'itomig_healthreport';
 
-    private const UPLOAD_ERROR_MESSAGES = [
-        UPLOAD_ERR_INI_SIZE   => 'Datei überschreitet upload_max_filesize in php.ini.',
-        UPLOAD_ERR_FORM_SIZE  => 'Datei überschreitet MAX_FILE_SIZE im Formular.',
-        UPLOAD_ERR_PARTIAL    => 'Datei wurde nur teilweise hochgeladen.',
-        UPLOAD_ERR_NO_FILE    => 'Keine Datei hochgeladen.',
-        UPLOAD_ERR_NO_TMP_DIR => 'Kein tmp-Verzeichnis verfügbar.',
-        UPLOAD_ERR_CANT_WRITE => 'Schreibfehler beim Upload.',
-        UPLOAD_ERR_EXTENSION  => 'Upload durch PHP-Extension blockiert.',
-    ];
-
     public function __construct($sViewPath = '', $sModuleName = 'core', $aAdditionalPaths = [])
     {
         $sModuleName = 'itomig-healthreport';
-        $sViewPath = MODULESROOT . 'itomig-healthreport/templates';
+        // Ueber __DIR__ statt MODULESROOT.'itomig-healthreport/...' aufloesen: der
+        // physische Ordnername unter extensions/ muss so nicht mit dem Modul-Code
+        // uebereinstimmen (z.B. beim Deploy als itomig-healthreport-extension).
+        $sViewPath = dirname(__DIR__, 2) . '/templates';
         parent::__construct($sViewPath, $sModuleName, $aAdditionalPaths);
 
         // Admin-only - identisches Muster zu itomig-healthcheck.
@@ -50,12 +45,14 @@ class HealthReportController extends Controller
     public function OperationShowForm(): void
     {
         $aParams = [
-            'sTransactionId' => utils::GetNewTransactionId(),
-            'sFormAction'    => utils::GetAbsoluteUrlAppRoot() . 'pages/UI.php?route=itomig_healthreport.upload',
-            'sErrorMessage'  => (string) utils::ReadParam('err', '', false, 'raw_data'),
+            'sTransactionId'   => utils::GetNewTransactionId(),
+            'sFormAction'      => utils::GetAbsoluteUrlAppRoot() . 'pages/UI.php?route=itomig_healthreport.upload',
+            'sErrorMessage'    => (string) utils::ReadParam('err', '', false, 'raw_data'),
+            'aOrganizations'   => $this->getOrganizations(),
+            'sSelectedOrgId'   => (string) utils::ReadParam('org_id', '', false, 'raw_data'),
         ];
 
-        $this->m_sOperation = 'ShowForm';
+        $this->m_sOperation = 'UploadForm';
         $this->DisplayPage($aParams);
     }
 
@@ -71,7 +68,10 @@ class HealthReportController extends Controller
             return;
         }
 
+        $iOrgId = (int) utils::ReadPostedParam('org_id', '0', 'raw_data');
+
         try {
+            $this->validateOrganization($iOrgId);
             $sTmpPath = $this->validateUpload();
 
             $oPipeline = new ReportPipeline();
@@ -81,13 +81,46 @@ class HealthReportController extends Controller
             $sZipFilename = (string) ($_FILES['zip']['name'] ?? 'healthcheck.zip');
 
             $oPersister = new RunPersister();
-            $iRunId = $oPersister->persist($aResult, $sZipBinary, $sZipFilename);
+            $iRunId = $oPersister->persist($aResult, $iOrgId, $sZipBinary, $sZipFilename);
 
             $this->redirectToRunDetails($iRunId);
         } catch (\Throwable $e) {
             $this->redirectToFormWithError(
-                \Dict::Format('Itomig:HealthReport:Error:ProcessingFailed', $e->getMessage())
+                \Dict::Format('Itomig:HealthReport:Error:ProcessingFailed', $e->getMessage()),
+                $iOrgId
             );
+        }
+    }
+
+    /**
+     * Liefert alle Organisationen (id, name) alphabetisch sortiert fuer das
+     * Auswahl-Dropdown im Upload-Formular.
+     *
+     * @return array<int, array{id: int, name: string}>
+     */
+    private function getOrganizations(): array
+    {
+        $oSearch = \DBObjectSearch::FromOQL('SELECT Organization');
+        $oSet = new \DBObjectSet($oSearch, ['name' => true]);
+
+        $aOrganizations = [];
+        while ($oOrg = $oSet->Fetch()) {
+            $aOrganizations[] = [
+                'id'   => (int) $oOrg->GetKey(),
+                'name' => (string) $oOrg->Get('name'),
+            ];
+        }
+
+        return $aOrganizations;
+    }
+
+    /**
+     * Prueft, dass eine gueltige, existierende Organisation ausgewaehlt wurde.
+     */
+    private function validateOrganization(int $iOrgId): void
+    {
+        if ($iOrgId <= 0 || \MetaModel::GetObject('Organization', $iOrgId, false) === null) {
+            throw new \RuntimeException(\Dict::S('Itomig:HealthReport:Error:NoOrganization'));
         }
     }
 
@@ -95,28 +128,83 @@ class HealthReportController extends Controller
      * Prueft den Upload (Fehlercode, Herkunft, Dateiendung) und liefert den
      * temporaeren Pfad der hochgeladenen Datei.
      *
-     * Muster identisch zur ehemaligen web/process.php.
+     * Muster identisch zur ehemaligen web/process.php; die eigentliche
+     * Pruefung liegt in ZipUploadValidator, damit sie auch vom
+     * Portal-Upload-Controller genutzt werden kann.
      */
     private function validateUpload(): string
     {
-        $iErrorCode = $_FILES['zip']['error'] ?? UPLOAD_ERR_NO_FILE;
-        if (empty($_FILES['zip']['tmp_name']) || $iErrorCode !== UPLOAD_ERR_OK) {
-            $sReason = self::UPLOAD_ERROR_MESSAGES[$iErrorCode] ?? 'unbekannter Fehler';
-            throw new \RuntimeException(\Dict::Format('Itomig:HealthReport:Error:UploadFailed', $sReason));
+        return (new ZipUploadValidator())->validate();
+    }
+
+    /**
+     * Rendert die Liste der ueber das Portal eingegangenen, noch nicht
+     * ausgewerteten Uploads (GET).
+     */
+    public function OperationPendingUploads(): void
+    {
+        $oSearch = \DBObjectSearch::FromOQL('SELECT HealthcheckUpload');
+        $oSet = new \DBObjectSet($oSearch, ['eingegangen_am' => false]);
+
+        $aUploads = [];
+        while ($oUpload = $oSet->Fetch()) {
+            $oOrg = \MetaModel::GetObject('Organization', (int) $oUpload->Get('org_id'), false);
+            $iRunId = (int) $oUpload->Get('run_id');
+            $aUploads[] = [
+                'id'             => (int) $oUpload->GetKey(),
+                'org_name'       => $oOrg !== null ? (string) $oOrg->Get('name') : '',
+                'eingegangen_am' => (string) $oUpload->Get('eingegangen_am'),
+                'dateiname'      => (string) $oUpload->Get('dateiname'),
+                'status'         => (string) $oUpload->Get('status'),
+                'run_id'         => $iRunId,
+                'run_url'        => $iRunId > 0
+                    ? utils::GetAbsoluteUrlAppRoot() . 'pages/UI.php?operation=details&class=HealthcheckRun&id=' . $iRunId
+                    : '',
+            ];
         }
 
-        $sTmpPath = $_FILES['zip']['tmp_name'];
-        if (!is_uploaded_file($sTmpPath)) {
-            throw new \RuntimeException(\Dict::S('Itomig:HealthReport:Error:NotUploaded'));
+        $aParams = [
+            'sTransactionId' => utils::GetNewTransactionId(),
+            'sFormAction'    => utils::GetAbsoluteUrlAppRoot() . 'pages/UI.php?route=itomig_healthreport.process_upload',
+            'sErrorMessage'  => (string) utils::ReadParam('err', '', false, 'raw_data'),
+            'aUploads'       => $aUploads,
+        ];
+
+        $this->m_sOperation = 'PendingUploads';
+        $this->DisplayPage($aParams);
+    }
+
+    /**
+     * Stoesst die Auswertung eines im Portal eingegangenen Uploads an (POST).
+     */
+    public function OperationProcessUpload(): void
+    {
+        $sTransactionId = utils::ReadPostedParam('transaction_id', '', 'transaction_id');
+        if (!utils::IsTransactionValid($sTransactionId)) {
+            $this->redirectToPendingUploadsWithError(\Dict::S('Itomig:HealthReport:Error:InvalidToken'));
+            return;
         }
 
-        $sOrigName = (string) $_FILES['zip']['name'];
-        $sExt = strtolower(pathinfo($sOrigName, PATHINFO_EXTENSION));
-        if ($sExt !== 'zip') {
-            throw new \RuntimeException(\Dict::S('Itomig:HealthReport:Error:NotZip'));
-        }
+        $iUploadId = (int) utils::ReadPostedParam('upload_id', '0', 'raw_data');
 
-        return $sTmpPath;
+        try {
+            $oProcessor = new UploadProcessor();
+            $iRunId = $oProcessor->process($iUploadId);
+
+            $this->redirectToRunDetails($iRunId);
+        } catch (\Throwable $e) {
+            $this->redirectToPendingUploadsWithError(
+                \Dict::Format('Itomig:HealthReport:Error:ProcessingFailed', $e->getMessage())
+            );
+        }
+    }
+
+    private function redirectToPendingUploadsWithError(string $sMessage): void
+    {
+        $sUrl = utils::GetAbsoluteUrlAppRoot()
+            . 'pages/UI.php?route=itomig_healthreport.pending_uploads&err=' . rawurlencode($sMessage);
+        header('Location: ' . $sUrl);
+        exit;
     }
 
     private function redirectToRunDetails(int $iRunId): void
@@ -126,10 +214,13 @@ class HealthReportController extends Controller
         exit;
     }
 
-    private function redirectToFormWithError(string $sMessage): void
+    private function redirectToFormWithError(string $sMessage, int $iOrgId = 0): void
     {
         $sUrl = utils::GetAbsoluteUrlAppRoot()
             . 'pages/UI.php?route=itomig_healthreport.show_form&err=' . rawurlencode($sMessage);
+        if ($iOrgId > 0) {
+            $sUrl .= '&org_id=' . $iOrgId;
+        }
         header('Location: ' . $sUrl);
         exit;
     }
