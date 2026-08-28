@@ -1,12 +1,6 @@
 {# ITOMIG Healthreport - Upload-Formular #}
 {% apply spaceless %}
 
-<style>
-    .itomig-healthreport #itomig_healthreport_zip {
-        border: none;
-    }
-</style>
-
 {% UIContentBlock Standard {'aContainerClasses':['itomig-healthreport']} %}
 
     {% UITitle ForPage {'sTitle':'Itomig:HealthReport:UI:PageTitle'|dict_s} %}{% EndUITitle %}
@@ -23,27 +17,31 @@
             {% UIAlert ForFailure {'sContent':sErrorMessage,'sId':'itomig-healthreport-error','IsCollapsible':false,'IsClosable':true} %}{% EndUIAlert %}
         {% endif %}
 
-        <form id="itomig-healthreport-form" action="{{ sFormAction }}" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="transaction_id" value="{{ sTransactionId }}">
+        {% UIForm Standard {'sId':'itomig-healthreport-form','Action':sFormAction} %}
+            {% UIInput ForHidden {'sName':'transaction_id','sValue':sTransactionId} %}
 
-            {% UIFieldSet Standard {'sLegend':'Itomig:HealthReport:UI:OrganizationLabel'|dict_s} %}
-                <select id="itomig_healthreport_org" name="org_id" class="ibo-input" required>
-                    <option value="" {% if sSelectedOrgId is empty %}selected{% endif %} disabled>{{ 'Itomig:HealthReport:UI:OrganizationPlaceholder'|dict_s }}</option>
-                    {% for oOrg in aOrganizations %}
-                        <option value="{{ oOrg.id }}" {% if sSelectedOrgId == (oOrg.id ~ '') %}selected{% endif %}>{{ oOrg.name }}</option>
-                    {% endfor %}
-                </select>
-            {% EndUIFieldSet %}
+            {% UIFieldSet Standard {'sLegend':'Itomig:HealthReport:UI:UploadFieldsetLegend'|dict_s} %}
 
-            {% UIFieldSet Standard {'sLegend':'Itomig:HealthReport:UI:UploadLabel'|dict_s} %}
-                <input type="file" id="itomig_healthreport_zip" name="zip" accept=".zip,application/zip" class="ibo-input" required>
+                {% UIField Standard {'sLabel':'Itomig:HealthReport:UI:OrganizationLabel'|dict_s} %}
+                    {% UISelect ForSelect {'sName':'org_id','sId':'itomig_healthreport_org','CSSClasses':['ibo-input','ibo-input-select']} %}
+                        {% UISelectOption ForSelectOption {'sValue':'','sLabel':'Itomig:HealthReport:UI:OrganizationPlaceholder'|dict_s,'bSelected':(sSelectedOrgId is empty)} %}
+                        {% for oOrg in aOrganizations %}
+                            {% UISelectOption ForSelectOption {'sValue':(oOrg.id ~ ''),'sLabel':oOrg.name,'bSelected':(sSelectedOrgId == (oOrg.id ~ ''))} %}
+                        {% endfor %}
+                    {% EndUISelect %}
+                {% EndUIField %}
+
+                {% UIField Standard {'sLabel':'Itomig:HealthReport:UI:UploadLabel'|dict_s} %}
+                    {% UIFileSelect Standard {'sName':'zip','sId':'itomig_healthreport_zip'} %}
+                {% EndUIField %}
+
             {% EndUIFieldSet %}
 
             {% UIContentBlock Standard {'aContainerClasses':['ibo-update-core-submit']} %}
                 {% UIButton ForPrimaryAction {'sLabel':'Itomig:HealthReport:UI:Submit'|dict_s,'sId':'itomig-healthreport-submit','bIsSubmit':true} %}
                 {% UISpinner Standard {'sId':'itomig-healthreport-spinner','IsHidden':true} %}
             {% EndUIContentBlock %}
-        </form>
+        {% EndUIForm %}
 
     {% EndUIContentBlock %}
 

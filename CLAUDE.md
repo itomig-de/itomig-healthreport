@@ -176,8 +176,10 @@ Jede Reporter-Datei exportiert eine Funktion `report<Name>(array $raw, array $co
 ```php
 function reportDesign(array $raw, array $config): HealthcheckReport
 {
-    // $raw['meta']  — kunde, umgebung, modul, tier, timestamp, itop_version|db_server_version
-    // $raw['daten'] — modul-spezifische Rohdaten (genau wie vom Collector geschrieben)
+    // $raw['meta']  — customer (URL), environment, app_root_url, db_name, instance_id,
+    //                 module, tier, timestamp, itop_version|db_server_version
+    //                 (Anzeige-/Slug-Name kommt aus db_name, nicht aus customer — s.u.)
+    // $raw['data']  — modul-spezifische Rohdaten (genau wie vom Collector geschrieben)
     // $config       — Reporter-Schwellwerte (reporter-defaults.php oder Override)
     //
     // Reporter wendet Schwellwerte an, baut Findings, gibt HealthcheckReport zurück.
@@ -239,8 +241,8 @@ Erwartet wird, was die iTop-Extension `itomig-healthcheck` (Collector-Version �
 nicht mehr kompatibel.
 
 ```
-healthcheck_<kunde>_<ts>.zip
-├── manifest.json      {customer, environment, itop_version, db_server_version, timestamp, extension_version, modules:[…]}
+healthcheck_<host-slug>_<ts>.zip
+├── manifest.json      {customer, environment, app_root_url, db_name, instance_id, itop_version, db_server_version, timestamp, extension_version, modules:[…]}
 ├── design.json        {meta:{…}, data:{…}}
 ├── data.json
 ├── synchro.json
@@ -252,7 +254,19 @@ healthcheck_<kunde>_<ts>.zip
 └── object-freshness.json
 ```
 
-Jede Modul-JSON folgt `{meta: {customer, environment, module, tier, timestamp, collector_version, itop_version|db_server_version}, data: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen.
+Jede Modul-JSON folgt `{meta: {customer, environment, app_root_url, db_name, instance_id, module, tier, timestamp, collector_version, itop_version|db_server_version}, data: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen.
+
+**Customer/db_name-Runde (2026-08-20, Collector ≥ 26.3.0):** `meta.customer` ist seither die volle
+`app_root_url` der Kundeninstanz (Fallback `db_name`, falls leer) statt des Datenbanknamens —
+als Instanz-Kennung eindeutiger, aber als Kurz-/Anzeigename ungeeignet. Zwei neue Felder direkt
+nach `environment`: `app_root_url` (identischer Wert wie `customer`, ohne Fallback) und
+`db_name` (der bisherige `customer`-Wert). Zusätzlich `instance_id` (string|null, stabile UUID aus
+`data/instance.txt`, bleibt über Umbenennungen/Migrationen hinweg gleich). **Alle 8 Reporter und
+`tools/import-zip.php` lesen den Anzeige-/Slug-Namen deshalb aus `meta.db_name`, nicht mehr aus
+`meta.customer`** — `customer` (URL) und `instance_id` werden zusätzlich unverändert in
+`HealthcheckRun.zip_customer_url`/`zip_instance_id` persistiert (Mismatch-Erkennung/Debugging),
+fließen aber nicht in Slug/Ordnernamen (`daten/<kunde>/…`) oder den Friendlyname ein. Der
+ZIP-Dateiname verwendet seither ebenfalls den Host-Slug statt eines `db_name`-Slugs.
 
 **Datenschutz-Runde (2026-08):** Aus DSGVO-Gründen liefert der Collector keine
 personenbezogenen Einzeldaten mehr, nur noch Aggregat-Zahlen — betroffen sind

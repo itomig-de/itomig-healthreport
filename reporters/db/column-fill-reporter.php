@@ -14,7 +14,7 @@ require_once __DIR__ . '/../../lib/HealthcheckUtils.php';
 
 function reportColumnFill(array $raw, array $config): HealthcheckReport
 {
-    $kunde = $raw['meta']['customer'] ?? ($config['kunde']['name'] ?? '');
+    $kunde = $raw['meta']['db_name'] ?? ($config['kunde']['name'] ?? '');
     $umgebung = $raw['meta']['environment'] ?? ($config['kunde']['umgebung'] ?? '');
     $report = new HealthcheckReport($kunde, $umgebung);
 
