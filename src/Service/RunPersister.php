@@ -3,13 +3,16 @@ declare(strict_types=1);
 
 namespace Itomig\iTop\Extension\HealthReport\Service;
 
-use HealthcheckModuleReport;
 use HealthcheckRun;
 use ormDocument;
 
 /**
- * Persistiert das Ergebnis von ReportPipeline::run() als iTop-Objekte:
- * ein HealthcheckRun (Lauf) mit n HealthcheckModuleReport-Kindern (je Modul).
+ * Persistiert das Ergebnis von ReportPipeline::run() als HealthcheckRun.
+ *
+ * Die gesamte Auswertung (Management-Summary + alle Modul-Ergebnisse) wird
+ * als ein JSON am Run gespeichert (bericht_json) - keine HTML-Blobs und keine
+ * separaten Modul-Report-Objekte mehr (siehe Issue #8). Die HTML-Darstellung
+ * wird spaeter separat zur Anzeigezeit aus bericht_json gerendert.
  */
 class RunPersister
 {
@@ -36,23 +39,9 @@ class RunPersister
         $oRun->Set('ampel_gesamt', $pipelineResult['ampel_gesamt']);
         $oRun->Set('modul_anzahl', count($pipelineResult['module']));
         $oRun->Set('zip_datei', new ormDocument($zipBinary, 'application/zip', $zipFilename));
-        $oRun->Set('summary_html', new ormDocument($pipelineResult['summary_html'], 'text/html', 'summary.html'));
-        $oRun->Set('summary_json', new ormDocument($pipelineResult['summary_json'], 'application/json', 'summary.json'));
-        $iRunId = (int) $oRun->DBInsert();
+        $oRun->Set('bericht_json', $pipelineResult['bericht_json']);
 
-        foreach ($pipelineResult['module'] as $aModule) {
-            $oModuleReport = new HealthcheckModuleReport();
-            $oModuleReport->Set('run_id', $iRunId);
-            $oModuleReport->Set('kategorie', $aModule['kategorie']);
-            $oModuleReport->Set('label', $aModule['label']);
-            $oModuleReport->Set('ampel', $aModule['ampel']);
-            $oModuleReport->Set('befund_anzahl', $aModule['befund_anzahl']);
-            $oModuleReport->Set('report_html', new ormDocument($aModule['html'], 'text/html', $aModule['kategorie'] . '.html'));
-            $oModuleReport->Set('report_json', new ormDocument($aModule['json'], 'application/json', $aModule['kategorie'] . '.json'));
-            $oModuleReport->DBInsert();
-        }
-
-        return $iRunId;
+        return (int) $oRun->DBInsert();
     }
 
     /**

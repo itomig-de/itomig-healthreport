@@ -39,7 +39,7 @@ class HealthReportUploadBrickController extends BrickController
     }
 
     /**
-     * Rendert das Upload-Formular + die Liste der eigenen Uploads (GET).
+     * Rendert das Upload-Formular + den letzten eigenen Upload (GET).
      */
     public function DisplayAction(Request $oRequest, $sBrickId)
     {
@@ -56,7 +56,7 @@ class HealthReportUploadBrickController extends BrickController
             'bHasOrg'        => $iOrgId > 0,
             'sMessage'       => (string) $oRequest->get('msg', ''),
             'sErrorMessage'  => (string) $oRequest->get('err', ''),
-            'aUploads'       => $iOrgId > 0 ? $this->getOwnUploads($iOrgId) : [],
+            'aLastUpload'    => $iOrgId > 0 ? $this->getLastUpload($iOrgId) : null,
         ];
 
         return $this->render($oBrick->GetPageTemplatePath(), $aData);
@@ -100,23 +100,27 @@ class HealthReportUploadBrickController extends BrickController
     }
 
     /**
-     * @return array<int, array{eingegangen_am: string, dateiname: string, status: string}>
+     * Liefert nur den zuletzt eingegangenen Upload der Organisation (Issue #6) --
+     * kein voller Verlauf.
+     *
+     * @return array{eingegangen_am: string, dateiname: string, status: string}|null
      */
-    private function getOwnUploads(int $iOrgId): array
+    private function getLastUpload(int $iOrgId): ?array
     {
         $oSearch = DBObjectSearch::FromOQL('SELECT HealthcheckUpload WHERE org_id = :org_id');
         $oSet = new DBObjectSet($oSearch, ['eingegangen_am' => false], ['org_id' => $iOrgId]);
+        $oSet->SetLimit(1);
 
-        $aUploads = [];
-        while ($oUpload = $oSet->Fetch()) {
-            $aUploads[] = [
-                'eingegangen_am' => (string) $oUpload->Get('eingegangen_am'),
-                'dateiname'      => (string) $oUpload->Get('dateiname'),
-                'status'         => (string) $oUpload->Get('status'),
-            ];
+        $oUpload = $oSet->Fetch();
+        if ($oUpload === null) {
+            return null;
         }
 
-        return $aUploads;
+        return [
+            'eingegangen_am' => (string) $oUpload->Get('eingegangen_am'),
+            'dateiname'      => (string) $oUpload->Get('dateiname'),
+            'status'         => (string) $oUpload->Get('status'),
+        ];
     }
 
     /**

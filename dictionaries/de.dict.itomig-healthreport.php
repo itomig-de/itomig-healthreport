@@ -39,28 +39,10 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
     'Class:HealthcheckRun/Attribute:ampel_gesamt/Value:gruen' => 'Grün',
     'Class:HealthcheckRun/Attribute:modul_anzahl'        => 'Anzahl ausgewerteter Module',
     'Class:HealthcheckRun/Attribute:zip_datei'           => 'Original-ZIP',
-    'Class:HealthcheckRun/Attribute:summary_html'        => 'Management-Summary (HTML)',
-    'Class:HealthcheckRun/Attribute:summary_json'        => 'Management-Summary (JSON)',
-    'Class:HealthcheckRun/Attribute:modul_reports'       => 'Modul-Reports',
+    'Class:HealthcheckRun/Attribute:bericht_json'        => 'Gesamtbericht (JSON)',
     'Class:HealthcheckRun:context'                       => 'Kontext',
     'Class:HealthcheckRun:versionen'                      => 'Versionen',
     'Class:HealthcheckRun:dateien'                        => 'Dateien',
-
-    // Class: HealthcheckModuleReport
-    'Class:HealthcheckModuleReport'                      => 'Healthcheck-Modul-Report',
-    'Class:HealthcheckModuleReport+'                     => 'Der ausgewertete Report eines einzelnen Healthcheck-Moduls innerhalb eines Laufs',
-    'Class:HealthcheckModuleReport/Attribute:run_id'             => 'Healthcheck-Lauf',
-    'Class:HealthcheckModuleReport/Attribute:kategorie'          => 'Kategorie',
-    'Class:HealthcheckModuleReport/Attribute:label'              => 'Bezeichnung',
-    'Class:HealthcheckModuleReport/Attribute:ampel'              => 'Ampel',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:rot'    => 'Rot',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:gelb'   => 'Gelb',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:gruen'  => 'Grün',
-    'Class:HealthcheckModuleReport/Attribute:befund_anzahl'      => 'Anzahl Befunde',
-    'Class:HealthcheckModuleReport/Attribute:report_html'        => 'Detail-Report (HTML)',
-    'Class:HealthcheckModuleReport/Attribute:report_json'        => 'Detail-Report (JSON)',
-    'Class:HealthcheckModuleReport:info'                         => 'Informationen',
-    'Class:HealthcheckModuleReport:dateien'                      => 'Dateien',
 
     // Class: HealthcheckUpload
     'Class:HealthcheckUpload'                      => 'Healthcheck-Upload',
@@ -83,7 +65,7 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
     'Brick:Portal:HealthReportUpload:Title'  => 'Healthcheck hochladen',
     'Brick:Portal:HealthReportUpload:Title+' => 'ZIP eines Healthcheck-Collector-Laufs hochladen',
     'Itomig:HealthReport:Portal:Intro'       => 'Hier das ZIP eines Healthcheck-Collector-Laufs hochladen. ITOMIG wertet es aus und meldet sich mit den Ergebnissen.',
-    'Itomig:HealthReport:Portal:OwnUploads'  => 'Meine Uploads',
+    'Itomig:HealthReport:Portal:LastUpload'  => 'Letzter Upload',
     'Itomig:HealthReport:Portal:UploadSuccess' => 'Das ZIP wurde erfolgreich hochgeladen und wird von ITOMIG ausgewertet.',
 
     // UI - Eingegangene Uploads (Konsole)

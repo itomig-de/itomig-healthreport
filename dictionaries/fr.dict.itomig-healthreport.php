@@ -39,28 +39,10 @@ Dict::Add('FR FR', 'French', 'Français', array(
     'Class:HealthcheckRun/Attribute:ampel_gesamt/Value:gruen' => 'Vert',
     'Class:HealthcheckRun/Attribute:modul_anzahl'        => 'Nombre de modules évalués',
     'Class:HealthcheckRun/Attribute:zip_datei'           => 'ZIP original',
-    'Class:HealthcheckRun/Attribute:summary_html'        => 'Synthèse (HTML)',
-    'Class:HealthcheckRun/Attribute:summary_json'        => 'Synthèse (JSON)',
-    'Class:HealthcheckRun/Attribute:modul_reports'       => 'Rapports de module',
+    'Class:HealthcheckRun/Attribute:bericht_json'        => 'Rapport complet (JSON)',
     'Class:HealthcheckRun:context'                       => 'Contexte',
     'Class:HealthcheckRun:versionen'                      => 'Versions',
     'Class:HealthcheckRun:dateien'                        => 'Fichiers',
-
-    // Class: HealthcheckModuleReport
-    'Class:HealthcheckModuleReport'                      => 'Rapport de module Healthcheck',
-    'Class:HealthcheckModuleReport+'                     => 'Le rapport évalué d\'un module Healthcheck au sein d\'une exécution',
-    'Class:HealthcheckModuleReport/Attribute:run_id'             => 'Exécution Healthcheck',
-    'Class:HealthcheckModuleReport/Attribute:kategorie'          => 'Catégorie',
-    'Class:HealthcheckModuleReport/Attribute:label'              => 'Libellé',
-    'Class:HealthcheckModuleReport/Attribute:ampel'              => 'Statut',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:rot'    => 'Rouge',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:gelb'   => 'Jaune',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:gruen'  => 'Vert',
-    'Class:HealthcheckModuleReport/Attribute:befund_anzahl'      => 'Nombre de constats',
-    'Class:HealthcheckModuleReport/Attribute:report_html'        => 'Rapport détaillé (HTML)',
-    'Class:HealthcheckModuleReport/Attribute:report_json'        => 'Rapport détaillé (JSON)',
-    'Class:HealthcheckModuleReport:info'                         => 'Informations',
-    'Class:HealthcheckModuleReport:dateien'                      => 'Fichiers',
 
     // Class: HealthcheckUpload
     'Class:HealthcheckUpload'                      => 'Import Healthcheck',
@@ -83,7 +65,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
     'Brick:Portal:HealthReportUpload:Title'  => 'Importer un Healthcheck',
     'Brick:Portal:HealthReportUpload:Title+' => 'Importer le ZIP d\'une exécution du collecteur Healthcheck',
     'Itomig:HealthReport:Portal:Intro'       => 'Importez ici le ZIP d\'une exécution du collecteur Healthcheck. ITOMIG l\'évaluera et reviendra vers vous avec les résultats.',
-    'Itomig:HealthReport:Portal:OwnUploads'  => 'Mes imports',
+    'Itomig:HealthReport:Portal:LastUpload'  => 'Dernier import',
     'Itomig:HealthReport:Portal:UploadSuccess' => 'Le ZIP a été importé avec succès et sera évalué par ITOMIG.',
 
     // UI - Imports en attente (console)

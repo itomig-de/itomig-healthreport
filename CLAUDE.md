@@ -6,8 +6,8 @@ Guidance für Claude Code (claude.ai/code) bei Arbeit in diesem Repository.
 
 ITOMIG-interne Reporter-Pipeline für Healthcheck-ZIPs, verpackt als installierbare
 **iTop-Extension** (`itomig-healthreport`). Nimmt das Collector-ZIP aus der iTop-Extension
-`itomig-healthcheck` entgegen, wertet es aus und speichert das Ergebnis als iTop-Objekte
-(`HealthcheckRun` + `HealthcheckModuleReport`). Kein externer Webserver, keine externe DB,
+`itomig-healthcheck` entgegen, wertet es aus und speichert das Ergebnis als iTop-Objekt
+(`HealthcheckRun`). Kein externer Webserver, keine externe DB,
 keine API-Calls — die Auswertung läuft direkt im iTop der ITOMIG. PHP 8.1+, nur Builtins
 (`json`, `zip`).
 
@@ -15,8 +15,10 @@ keine API-Calls — die Auswertung läuft direkt im iTop der ITOMIG. PHP 8.1+, n
 oder wahlweise über eine Portal-Brick, mit der Kunden ihr ZIP selbst hochladen (nur Ablage als
 `HealthcheckUpload`, Auswertung wird separat in der Konsole angestoßen — siehe „Portal-Upload
 durch Kunden" weiter unten)
-**Ausgang:** `HealthcheckRun`-Objekt (Management-Summary + Original-ZIP als Blob) mit
-verknüpften `HealthcheckModuleReport`-Objekten (ein Detail-Report pro Modul, ebenfalls als Blob)
+**Ausgang:** `HealthcheckRun`-Objekt mit der gesamten Auswertung (Management-Summary + alle
+Modul-Ergebnisse) als **ein** JSON (`bericht_json`) plus dem Original-ZIP als Blob. Keine
+HTML-Datei wird persistiert — die HTML-Darstellung wird separat zur Anzeigezeit aus
+`bericht_json` gerendert (siehe Issue #2, noch offen).
 
 Die Kern-Auswertungslogik (`lib/`, `reporters/`, `tools/import-zip.php`) ist bewusst
 iTop-unabhängig geblieben (globale Klassen/Funktionen, kein Namespace) und wird vom
@@ -27,7 +29,7 @@ iTop-Controller zur Laufzeit per `require_once` eingebunden — siehe „iTop-Ex
 ```
 itomig-healthreport-extension/            # = iTop-Modul-Wurzel (itop/extensions/itomig-healthreport/)
 ├── module.itomig-healthreport.php        # iTop-Modul-Definition (SetupWebPage::AddModule)
-├── datamodel.itomig-healthreport.xml     # Klassen HealthcheckRun/HealthcheckModuleReport, Menüs
+├── datamodel.itomig-healthreport.xml     # Klassen HealthcheckRun/HealthcheckUpload, Menüs
 ├── model.itomig-healthreport.php         # Auto-generiert bei Compile, nicht editieren
 ├── composer.json                         # PSR-4: Itomig\iTop\Extension\HealthReport\ -> src/
 ├── vendor/                                # Composer-Autoload, MUSS committed sein (kein composer install auf Ziel-iTop)
@@ -41,7 +43,7 @@ itomig-healthreport-extension/            # = iTop-Modul-Wurzel (itop/extensions
 │   │   └── Controller/HealthReportUploadBrickController.php  # Portal-Upload (nur Ablage, keine Auswertung)
 │   └── Service/
 │       ├── ReportPipeline.php            # Adapter: bindet lib/reporters/tools ein, liefert Ergebnis-Array
-│       ├── RunPersister.php              # Persistiert das Ergebnis als HealthcheckRun/-ModuleReport
+│       ├── RunPersister.php              # Persistiert das Ergebnis als HealthcheckRun (bericht_json)
 │       ├── UploadProcessor.php           # Wertet einen HealthcheckUpload nachtraeglich aus (Konsole)
 │       └── ZipUploadValidator.php        # Gemeinsame Upload-Validierung (Konsole + Portal)
 ├── portal/templates/upload.html.twig     # Portal-Seite der Upload-Brick (Bootstrap 3, kein ibo-*)
@@ -101,13 +103,14 @@ Nach dem Deploy erscheint das Menü **„Healthcheck"** (nur für Admins sichtba
    `APPROOT/data/itomig-healthreport/{daten,auswertung}` umgebogen; `HealthcheckUtils::log()`
    wird per Output-Buffering geschluckt (die Engine `echo`t unbedingt und hat keinen
    injizierbaren Logger).
-4. `RunPersister::persist()` legt ein `HealthcheckRun`-Objekt an (Kunde/Umgebung/Ampel +
-   Original-ZIP und Summary als `AttributeBlob`) und je Modul ein verknüpftes
-   `HealthcheckModuleReport`-Objekt (Detail-HTML/JSON als Blob).
+4. `RunPersister::persist()` legt ein `HealthcheckRun`-Objekt an (Kunde/Umgebung/Ampel,
+   Original-ZIP als `AttributeBlob` sowie die gesamte Auswertung — Management-Summary + alle
+   Modul-Ergebnisse — als **ein** JSON im Feld `bericht_json`, `AttributeText`). Es gibt keine
+   separaten Modul-Report-Objekte und keine persistierte HTML-Datei mehr (Issue #8).
 5. Redirect auf die native iTop-Detailseite des neuen `HealthcheckRun`
-   (`pages/UI.php?operation=details&class=HealthcheckRun&id=...`). Report-HTMLs werden dort
-   über iTops eingebauten Blob-Viewer angezeigt (`ormDocument::GetDisplayURL()`,
-   `pages/ajax.render.php?operation=display_document`) — kein eigener Streaming-Code nötig.
+   (`pages/UI.php?operation=details&class=HealthcheckRun&id=...`). Eine HTML-Darstellung aus
+   `bericht_json` wird separat und später ergänzt (siehe Issue #2, noch offen) — bis dahin ist
+   der Run nur über `bericht_json` bzw. das Original-ZIP nachvollziehbar.
 
 ### Portal-Upload durch Kunden
 
@@ -130,7 +133,7 @@ eigener Controller (`Combodo\iTop\Portal\Controller\BrickController`). `portal-b
 bindet Autoloader + Router nur ein, wenn `itop-portal-base` tatsaechlich installiert ist —
 ohne Portal bleibt die Extension unveraendert nutzbar. Rechte: `HealthcheckUpload` ist der
 einzige Portal-sichtbare Teil der Extension (`user_rights` gewaehrt Profil `2`/"Portal user"
-Lese-/Schreibrechte darauf); `HealthcheckRun`/`HealthcheckModuleReport` bleiben admin-only.
+Lese-/Schreibrechte darauf); `HealthcheckRun` bleibt admin-only.
 
 **Ausblick (noch nicht umgesetzt):** Anzeige der Auswertungsergebnisse (Management-Summary)
 im Portal ist fuer eine zukuenftige Version vorgesehen — dafuer fehlt aktuell ein

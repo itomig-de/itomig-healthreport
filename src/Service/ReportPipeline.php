@@ -45,15 +45,12 @@ class ReportPipeline
      *     instance_id: string|null,
      *     pruefsumme_status: string,
      *     ampel_gesamt: string,
-     *     summary_html: string,
-     *     summary_json: string,
+     *     bericht_json: string,
      *     module: array<int, array{
      *         kategorie: string,
      *         label: string,
      *         ampel: string,
-     *         befund_anzahl: int,
-     *         html: string,
-     *         json: string
+     *         befund_anzahl: int
      *     }>
      * }
      * @throws RuntimeException Wenn das ZIP ungueltig ist oder kein Modul ausgewertet werden konnte.
@@ -85,8 +82,9 @@ class ReportPipeline
                 // runReporter() schreibt als Nebeneffekt HTML+JSON unter
                 // APPROOT/data/itomig-healthreport/auswertung/ (Engine-Verhalten,
                 // siehe reporters/report-all.php). Die eigentliche Persistenz
-                // erfolgt ueber RunPersister als iTop-Blob; die Dateien dienen
-                // nur als Zwischenablage der Engine und werden hier ignoriert.
+                // erfolgt ueber RunPersister als ein Gesamt-JSON am Run; die
+                // Dateien dienen nur als Zwischenablage der Engine und werden
+                // hier ignoriert (siehe Issue #8 - keine HTML-Blobs mehr).
                 $r = $this->withSuppressedLog(
                     fn() => \runReporter($modul, $config, $imported['timestamp'], $reportTs, null)
                 );
@@ -98,8 +96,6 @@ class ReportPipeline
                     'label'         => \HealthcheckReport::CATEGORY_LABELS[$def['category']] ?? $def['label'],
                     'ampel'         => $this->toAmpel($ampel),
                     'befund_anzahl' => $this->countFindings($r['report'], $def['category']),
-                    'html'          => $r['report']->toHtml(null),
-                    'json'          => $r['report']->toJson(),
                 ];
                 $erfolg++;
             } catch (Throwable $e) {
@@ -128,8 +124,7 @@ class ReportPipeline
             'instance_id'        => $imported['instance_id'] ?? null,
             'pruefsumme_status'  => $imported['pruefsumme_status'] ?? 'nicht_geprueft',
             'ampel_gesamt'       => $ampelGesamt,
-            'summary_html'       => $gesamt->toHtmlManagementSummary([]),
-            'summary_json'       => $gesamt->toJson(),
+            'bericht_json'       => $gesamt->toJson(),
             'module'             => $module,
         ];
     }

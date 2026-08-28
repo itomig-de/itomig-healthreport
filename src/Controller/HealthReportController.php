@@ -16,7 +16,8 @@ use utils;
  * Stellt zwei Operationen bereit:
  *  - show_form: rendert das Upload-Formular
  *  - upload:    importiert das hochgeladene ZIP, wertet alle Module aus und
- *               speichert das Ergebnis als HealthcheckRun + HealthcheckModuleReport
+ *               speichert das Ergebnis als HealthcheckRun (ein Gesamt-JSON,
+ *               siehe RunPersister)
  *
  * Die Route folgt dem iTop-3.2-Konventionsmuster (analog itomig-healthcheck):
  *   /pages/UI.php?route=itomig_healthreport.<operation>
