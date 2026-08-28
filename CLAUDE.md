@@ -240,21 +240,55 @@ Erwartet wird, was die iTop-Extension `itomig-healthcheck` (Collector-Version �
 2.x lieferte noch deutsche Keys (`daten`/`kunde`/`umgebung`/...) und ist mit dieser Reporter-Version
 nicht mehr kompatibel.
 
+Seit Collector-Schema 4.0.0 (≥ Version 26.3.1) haben die Modul-Dateien im ZIP sprechende Namen
+statt `<slug>.json`; die genauen Namen stehen in `manifest.files[]` (siehe unten):
+
 ```
 healthcheck_<host-slug>_<ts>.zip
-├── manifest.json      {customer, environment, app_root_url, db_name, instance_id, itop_version, db_server_version, timestamp, extension_version, modules:[…]}
-├── design.json        {meta:{…}, data:{…}}
-├── data.json
-├── synchro.json
-├── integration.json
-├── system.json
-├── privacy.json
-├── table-overview.json
-├── column-fill.json
-└── object-freshness.json
+├── manifest.json                          {schema_version, customer, environment, app_root_url, db_name, instance_id, itop_version, db_server_version, timestamp, extension_version, modules:[…], files:[…], system_report_included, system_report_files, system_report_error}
+├── 01-datamodel-customizations.json       {meta:{…}, data:{…}}   (Modul design)
+├── 02-data-inventory.json                                        (Modul data)
+├── 03-data-synchronization.json                                  (Modul synchro)
+├── 04-integrations.json                                          (Modul integration)
+├── 05-system-environment.json                                    (Modul system)
+├── 06-privacy.json                                                (Modul privacy)
+├── 07-table-overview.json                                         (Modul table-overview)
+├── 08-column-fill.json                                            (Modul column-fill)
+├── 09-object-freshness.json                                       (Modul object-freshness)
+├── 10-background-tasks.json                                       (Modul background-tasks, neu in 4.0.0)
+└── 11-error-log.json                                              (Modul error-log, neu in 4.0.0)
 ```
 
-Jede Modul-JSON folgt `{meta: {customer, environment, app_root_url, db_name, instance_id, module, tier, timestamp, collector_version, itop_version|db_server_version}, data: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen.
+Jede Modul-JSON folgt `{meta: {customer, environment, app_root_url, db_name, instance_id, module, tier, timestamp, collector_version, itop_version|db_server_version}, data: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen (**Hinweis:** das aktuell abgelegte Test-ZIP ist Schema 2.x und für Schema-4.0.0-Tests unbrauchbar — vor dem nächsten Compatibility-Test ein frisches ZIP aus dem aktuellen Collector-Stand erzeugen).
+
+**Schema-4.0.0-Runde (Collector ≥ 26.3.1):** vier zusammengehörige Änderungen.
+
+1. **Sprechende Dateinamen:** `manifest.files[]` ist eine Liste von
+   `{name, module, sha256, bytes}` — `name` ist der Zip-Eintragsname (z. B.
+   `01-datamodel-customizations.json`), `module` der zugehörige Modul-Slug (`null` bei
+   Nicht-Modul-Dateien wie dem entpackten Systemreport). `tools/import-zip.php` löst den
+   Dateinamen je Modul über `files[]` auf (`resolveFileEntries()`); fehlt `files[]` im
+   Manifest (Alt-Collector-ZIP < 4.0.0), fällt der Import auf das Legacy-Muster `<slug>.json`
+   zurück und prüft keine Prüfsumme.
+2. **Prüfsummen:** `files[].sha256` (SHA-256, Hex, lowercase, über den exakten serialisierten
+   Datei-Inhalt vor dem Schreiben ins ZIP) und `files[].bytes` (Byte-Länge desselben Inhalts)
+   werden beim Import gegen den tatsächlichen ZIP-Inhalt geprüft
+   (`tools/import-zip.php::verifyChecksum()`). Bei Abweichung bricht der Import mit einer
+   Fehlermeldung ab (Modul, erwarteter/tatsächlicher Hash) — mögliches Zeichen für eine
+   nachträgliche Manipulation des ZIPs. Das Ergebnis wird als `HealthcheckRun.pruefsumme_status`
+   (`geprueft`/`nicht_geprueft`) persistiert.
+3. **Entpackter Systemreport:** `system_report_files` (Plural, Liste von Zip-Eintragsnamen)
+   ersetzt das frühere `system_report_filename` (Singular, verschachteltes ZIP).
+4. **Zwei neue Module:** `background-tasks` (laufende/hängende/überfällige Hintergrund-Jobs,
+   Quelle: iTop-Klasse `BackgroundTask`) und `error-log` (Level-Übersicht + wiederkehrende,
+   datenschutzkonform normalisierte Fehlermuster aus `log/error.log`) — Registrierung in
+   `lib/HealthcheckModules.php`, Reporter unter `reporters/rest/background-tasks-reporter.php`
+   und `reporters/rest/error-log-reporter.php`, Kategorien `background-tasks`/`error-log` in
+   `HealthcheckReport::CATEGORY_LABELS`.
+
+`manifest.schema_version` (z. B. `"4.0.0"`) wird beim Import gegen die höchste unterstützte
+Major-Version geprüft (`IMPORT_SUPPORTED_SCHEMA_MAJOR` in `tools/import-zip.php`); fehlt das
+Feld (Alt-ZIP), wird das als kompatibel behandelt.
 
 **Customer/db_name-Runde (2026-08-20, Collector ≥ 26.3.0):** `meta.customer` ist seither die volle
 `app_root_url` der Kundeninstanz (Fallback `db_name`, falls leer) statt des Datenbanknamens —
@@ -277,9 +311,9 @@ kein `items[]` mit Login/Kontakt/Profil mehr), `privacy.inactive_sample` (nur no
 `system.data.itop_version` ist komplett entfallen (war redundant zu `meta.itop_version`, das
 unverändert vorhanden bleibt). Neu verfügbar: `system.data.php.{version,sapi,extensions}` mit
 den echten PHP-Infos des Collector-Laufs. Optional, nicht auszuwerten: das ZIP kann zusätzlich
-eine `system-information-<ts>.zip` (unveränderte Kopie des iTop-„System Information"-Reports)
-enthalten; `manifest.json` bekommt dafür die Felder `system_report_included`,
-`system_report_filename`, `system_report_error` — beim Parsen ignorieren.
+den entpackten iTop-„System Information"-Report enthalten; `manifest.json` bekommt dafür die
+Felder `system_report_included`, `system_report_files` (Plural, seit Schema 4.0.0 — siehe
+Schema-4.0.0-Runde unten), `system_report_error` — beim Parsen ignorieren.
 
 ## Verwandte Repos
 
@@ -295,5 +329,5 @@ enthalten; `manifest.json` bekommt dafür die Felder `system_report_included`,
 
 ## Version
 
-Version: 26.3.0
-Last Updated: 2026-08-20
+Version: 26.3.1
+Last Updated: 2026-08-28

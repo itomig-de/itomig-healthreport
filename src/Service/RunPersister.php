@@ -32,6 +32,7 @@ class RunPersister
         $oRun->Set('extension_version', (string) ($pipelineResult['extension_version'] ?? ''));
         $oRun->Set('zip_customer_url', (string) ($pipelineResult['customer_url'] ?? ''));
         $oRun->Set('zip_instance_id', (string) ($pipelineResult['instance_id'] ?? ''));
+        $oRun->Set('pruefsumme_status', (string) ($pipelineResult['pruefsumme_status'] ?? 'nicht_geprueft'));
         $oRun->Set('ampel_gesamt', $pipelineResult['ampel_gesamt']);
         $oRun->Set('modul_anzahl', count($pipelineResult['module']));
         $oRun->Set('zip_datei', new ormDocument($zipBinary, 'application/zip', $zipFilename));

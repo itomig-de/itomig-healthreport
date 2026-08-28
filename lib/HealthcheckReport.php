@@ -5,7 +5,7 @@
  * Sammelt Befunde (Findings) und generiert JSON- und HTML-Reports
  * im ITOMIG Corporate Design mit Ampel-System.
  *
- * CATEGORY_LABELS umfasst alle 9 Module (6 REST + 3 DB) für den Gesamt-Report.
+ * CATEGORY_LABELS umfasst alle 11 Module (8 REST + 3 DB) für den Gesamt-Report.
  */
 
 declare(strict_types=1);
@@ -46,6 +46,8 @@ class HealthcheckReport
         'integration' => 'Integration & Benachrichtigung',
         'system'      => 'Server- & Systemzustand',
         'privacy'     => 'Datenschutz',
+        'background-tasks' => 'Hintergrund-Jobs',
+        'error-log'   => 'Error-Log',
         // DB Tier
         'tables'      => 'DB: Tabellen-Übersicht',
         'columns'     => 'DB: Spalten-Befüllung',
