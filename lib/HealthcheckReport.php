@@ -159,6 +159,77 @@ class HealthcheckReport
     }
 
     /**
+     * Baut einen Report aus der Ausgabe von toJson() wieder auf, z. B. um ihn
+     * zur Anzeigezeit aus HealthcheckRun.bericht_json als HTML zu rendern.
+     *
+     * Unbekannte Kategorien werden ignoriert, unbekannte Schweregrade zu
+     * "info" normalisiert (severity landet ungeescaped als CSS-Klasse im HTML).
+     *
+     * @throws \RuntimeException Wenn das JSON ungültig ist oder "results" fehlt.
+     */
+    public static function fromJson(string $json): self
+    {
+        try {
+            $data = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new \RuntimeException('Report-JSON ist ungültig: ' . $e->getMessage());
+        }
+
+        if (!is_array($data) || !isset($data['results']) || !is_array($data['results'])) {
+            throw new \RuntimeException('Report-JSON hat unerwartetes Schema ("results" fehlt).');
+        }
+
+        $meta = is_array($data['meta'] ?? null) ? $data['meta'] : [];
+        $report = new self((string) ($meta['customer'] ?? ''), (string) ($meta['environment'] ?? ''));
+        if (isset($meta['timestamp']) && is_string($meta['timestamp']) && $meta['timestamp'] !== '') {
+            $report->timestamp = $meta['timestamp'];
+        }
+
+        foreach ($data['results'] as $category => $catData) {
+            if (!isset(self::CATEGORY_LABELS[$category]) || !is_array($catData)) {
+                continue;
+            }
+
+            if (is_array($catData['summary'] ?? null)) {
+                $report->setCategorySummary(
+                    $category,
+                    (string) ($catData['summary']['text'] ?? ''),
+                    is_array($catData['summary']['stats'] ?? null) ? $catData['summary']['stats'] : []
+                );
+            }
+
+            foreach (is_array($catData['findings'] ?? null) ? $catData['findings'] : [] as $finding) {
+                if (!is_array($finding)) {
+                    continue;
+                }
+                $severity = (string) ($finding['severity'] ?? '');
+                $report->addFinding(
+                    $category,
+                    (string) ($finding['title'] ?? ''),
+                    in_array($severity, self::SEVERITY_ORDER, true) ? $severity : 'info',
+                    (string) ($finding['description'] ?? ''),
+                    is_array($finding['details'] ?? null) ? $finding['details'] : []
+                );
+            }
+        }
+
+        return $report;
+    }
+
+    /**
+     * Liefert eine Kopie, die nur die angegebene Kategorie enthält (Befunde +
+     * Summary) — Grundlage für die Detailansicht einer einzelnen Kategorie.
+     */
+    public function onlyCategory(string $category): self
+    {
+        $copy = clone $this;
+        $copy->findings = array_intersect_key($this->findings, [$category => true]);
+        $copy->summaries = array_intersect_key($this->summaries, [$category => true]);
+
+        return $copy;
+    }
+
+    /**
      * Generiert den vollständigen Detail-Report (alle Findings einer/mehrerer Kategorien).
      *
      * @param string|null $backToSummary Optionaler relativer Link zurück zum Management-Summary.

@@ -40,6 +40,8 @@ Dict::Add('FR FR', 'French', 'Français', array(
     'Class:HealthcheckRun/Attribute:modul_anzahl'        => 'Nombre de modules évalués',
     'Class:HealthcheckRun/Attribute:zip_datei'           => 'ZIP original',
     'Class:HealthcheckRun/Attribute:bericht_json'        => 'Rapport complet (JSON)',
+    'Class:HealthcheckRun:Tab:Report'                    => 'Rapport',
+    'Class:HealthcheckRun:Tab:Report:OpenInNewWindow'    => 'Ouvrir dans une nouvelle fenêtre',
     'Class:HealthcheckRun:context'                       => 'Contexte',
     'Class:HealthcheckRun:versionen'                      => 'Versions',
     'Class:HealthcheckRun:dateien'                        => 'Fichiers',
@@ -96,4 +98,7 @@ Dict::Add('FR FR', 'French', 'Français', array(
     'Itomig:HealthReport:Error:UploadNotFound' => 'Import introuvable.',
     'Itomig:HealthReport:Error:UploadAlreadyProcessed' => 'Cet import a déjà été évalué.',
     'Itomig:HealthReport:Error:TempFileFailed' => 'Impossible de créer un fichier temporaire pour le traitement.',
+    'Itomig:HealthReport:Error:NoReport'        => 'Aucun rapport n\'est disponible pour cette exécution du Healthcheck.',
+    'Itomig:HealthReport:Error:UnknownCategory' => 'Section de rapport inconnue.',
+    'Itomig:HealthReport:Error:RunNotFound'     => 'Exécution du Healthcheck introuvable.',
 ));

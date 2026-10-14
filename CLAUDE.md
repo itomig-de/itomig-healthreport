@@ -17,8 +17,8 @@ oder wahlweise über eine Portal-Brick, mit der Kunden ihr ZIP selbst hochladen 
 durch Kunden" weiter unten)
 **Ausgang:** `HealthcheckRun`-Objekt mit der gesamten Auswertung (Management-Summary + alle
 Modul-Ergebnisse) als **ein** JSON (`bericht_json`) plus dem Original-ZIP als Blob. Keine
-HTML-Datei wird persistiert — die HTML-Darstellung wird separat zur Anzeigezeit aus
-`bericht_json` gerendert (siehe Issue #2, noch offen).
+HTML-Datei wird persistiert — die HTML-Darstellung wird zur Anzeigezeit aus `bericht_json`
+gerendert (Reiter „Bericht“ am Run bzw. Route `itomig_healthreport.show_report`, Issue #2).
 
 Die Kern-Auswertungslogik (`lib/`, `reporters/`, `tools/import-zip.php`) ist bewusst
 iTop-unabhängig geblieben (globale Klassen/Funktionen, kein Namespace) und wird vom
@@ -36,13 +36,15 @@ itomig-healthreport-extension/            # = iTop-Modul-Wurzel (itop/extensions
 ├── dictionaries/{de,en,fr}.dict.itomig-healthreport.php
 ├── templates/UploadForm.html.twig        # Upload-Formular (Twig, ibo-*/UI*-Makros)
 ├── src/
-│   ├── Controller/HealthReportController.php  # Route itomig_healthreport.{show_form,upload,pending_uploads,process_upload}
+│   ├── Controller/HealthReportController.php  # Route itomig_healthreport.{show_form,upload,pending_uploads,process_upload,show_report}
+│   ├── Hook/HealthReportUIExtension.php  # Reiter "Bericht" (iframe auf show_report) an der HealthcheckRun-Detailseite
 │   ├── Portal/
 │   │   ├── Brick/HealthReportUploadBrick.php       # Portal-Brick "Healthcheck hochladen"
 │   │   ├── Router/HealthReportPortalRouter.php     # Registriert die Portal-Route (ItopExtensionsExtraRoutes)
 │   │   └── Controller/HealthReportUploadBrickController.php  # Portal-Upload (nur Ablage, keine Auswertung)
 │   └── Service/
 │       ├── ReportPipeline.php            # Adapter: bindet lib/reporters/tools ein, liefert Ergebnis-Array
+│       ├── ReportRenderer.php            # Rendert bericht_json zur Anzeigezeit als HTML (Konsole, kuenftig Portal)
 │       ├── RunPersister.php              # Persistiert das Ergebnis als HealthcheckRun (bericht_json)
 │       ├── UploadProcessor.php           # Wertet einen HealthcheckUpload nachtraeglich aus (Konsole)
 │       └── ZipUploadValidator.php        # Gemeinsame Upload-Validierung (Konsole + Portal)
@@ -105,12 +107,27 @@ Nach dem Deploy erscheint das Menü **„Healthcheck"** (nur für Admins sichtba
    injizierbaren Logger).
 4. `RunPersister::persist()` legt ein `HealthcheckRun`-Objekt an (Kunde/Umgebung/Ampel,
    Original-ZIP als `AttributeBlob` sowie die gesamte Auswertung — Management-Summary + alle
-   Modul-Ergebnisse — als **ein** JSON im Feld `bericht_json`, `AttributeText`). Es gibt keine
+   Modul-Ergebnisse — als **ein** JSON im Feld `bericht_json`, `AttributeLongText` — `AttributeText` ist auf 64 KB begrenzt und reicht für reale Läufe nicht). Es gibt keine
    separaten Modul-Report-Objekte und keine persistierte HTML-Datei mehr (Issue #8).
 5. Redirect auf die native iTop-Detailseite des neuen `HealthcheckRun`
-   (`pages/UI.php?operation=details&class=HealthcheckRun&id=...`). Eine HTML-Darstellung aus
-   `bericht_json` wird separat und später ergänzt (siehe Issue #2, noch offen) — bis dahin ist
-   der Run nur über `bericht_json` bzw. das Original-ZIP nachvollziehbar.
+   (`pages/UI.php?operation=details&class=HealthcheckRun&id=...`).
+
+### Anzeige des Berichts
+
+`bericht_json` ist bewusst nicht in der Detailansicht des Runs enthalten (unlesbar, ~200 KB).
+Stattdessen ergänzt `HealthReportUIExtension::OnDisplayRelations()` einen Reiter „Bericht“, der
+per iframe die Route `itomig_healthreport.show_report&id=<run>[&category=<key>]` einbettet
+(plus Link „In neuem Fenster öffnen“). `OperationShowReport()` (admin-only über den
+Controller-Konstruktor) liefert eigenständiges HTML ohne iTop-Seitenrahmen aus:
+
+- `ReportRenderer::render($berichtJson, $category, $linkBuilder)` rekonstruiert den Report per
+  `HealthcheckReport::fromJson()` und nutzt unverändert `toHtmlManagementSummary()` (ohne
+  `category`) bzw. `onlyCategory($key)->toHtml()` (Detailansicht). `category` wird gegen
+  `HealthcheckReport::CATEGORY_LABELS` geprüft.
+- Die Links (Ampel-Karten, „Details →“, „Zurück“) erzeugt ein vom Aufrufer übergebener
+  Link-Builder — der Renderer kennt weder Route noch Zugriffsprüfung.
+- `ReportRenderer::SECURITY_HEADERS` (u. a. CSP ohne Skripte, `frame-ancestors 'self'`,
+  `X-Frame-Options: SAMEORIGIN`) gilt für jede Auslieferung.
 
 ### Portal-Upload durch Kunden
 
@@ -135,10 +152,15 @@ ohne Portal bleibt die Extension unveraendert nutzbar. Rechte: `HealthcheckUploa
 einzige Portal-sichtbare Teil der Extension (`user_rights` gewaehrt Profil `2`/"Portal user"
 Lese-/Schreibrechte darauf); `HealthcheckRun` bleibt admin-only.
 
-**Ausblick (noch nicht umgesetzt):** Anzeige der Auswertungsergebnisse (Management-Summary)
-im Portal ist fuer eine zukuenftige Version vorgesehen — dafuer fehlt aktuell ein
-Portal-Scope auf `HealthcheckRun` (das Feld heisst dort `kunde_id`, nicht `org_id`) sowie eine
-Ausliefer-Route fuer die Blob-Felder.
+**Ausblick (noch nicht umgesetzt):** Anzeige des aktuellsten Berichts im Portal per iframe.
+Dafür eine **eigene** Portal-Route + Portal-Controller anlegen (die Konsolen-Route
+`show_report` ist admin-only und prüft keine Organisation): Organisation des Kontakts ermitteln
+(wie `getCurrentUserOrgId()`), `SELECT HealthcheckRun WHERE kunde_id = :org` absteigend nach
+`zeitpunkt` mit `SetLimit(1)` laden (Portal-Profile haben keine Leserechte auf
+`HealthcheckRun` — erst Org prüfen, dann gezielt lesen), mit demselben `ReportRenderer`
+rendern (Link-Builder über `generateUrl()`) und als Symfony-`Response` mit
+`ReportRenderer::SECURITY_HEADERS` ausliefern. Vorher inhaltlich klären, ob alle Befunde
+kundentauglich sind.
 
 ### Wichtige Namens-Kollision
 
@@ -213,6 +235,10 @@ Die Kategorie-Keys (`design`, `data`, `synchro`, `integration`, `system`, `priva
   - Ampel-Grid (Karten klickbar wenn `$detailLinks[$category]` gesetzt)
   - Mini-Sektionen mit Counts + „Details →"-Button
   - „Wichtigste Befunde"-Sektion mit `critical` + `warning` aus allen Kategorien
+- `fromJson(string $json)` — Gegenstück zu `toJson()`: baut den Report aus `bericht_json` wieder auf
+  (inkl. ursprünglichem `meta.timestamp`). Unbekannte Kategorien werden ignoriert, unbekannte
+  `severity`-Werte zu `info` normalisiert (severity landet als CSS-Klasse im HTML).
+- `onlyCategory(string $category)` — Kopie mit nur einer Kategorie, Basis der Detailansicht.
 - Bestehende `addFinding()`, `setCategorySummary()`, `toJson()` unverändert.
 
 ## Konfiguration

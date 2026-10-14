@@ -40,6 +40,8 @@ Dict::Add('EN US', 'English', 'English', array(
     'Class:HealthcheckRun/Attribute:modul_anzahl'        => 'Number of Evaluated Modules',
     'Class:HealthcheckRun/Attribute:zip_datei'           => 'Original ZIP',
     'Class:HealthcheckRun/Attribute:bericht_json'        => 'Full Report (JSON)',
+    'Class:HealthcheckRun:Tab:Report'                    => 'Report',
+    'Class:HealthcheckRun:Tab:Report:OpenInNewWindow'    => 'Open in new window',
     'Class:HealthcheckRun:context'                       => 'Context',
     'Class:HealthcheckRun:versionen'                      => 'Versions',
     'Class:HealthcheckRun:dateien'                        => 'Files',
@@ -96,4 +98,7 @@ Dict::Add('EN US', 'English', 'English', array(
     'Itomig:HealthReport:Error:UploadNotFound' => 'Upload not found.',
     'Itomig:HealthReport:Error:UploadAlreadyProcessed' => 'This upload has already been evaluated.',
     'Itomig:HealthReport:Error:TempFileFailed' => 'Could not create a temporary file for processing.',
+    'Itomig:HealthReport:Error:NoReport'        => 'No report is available for this Healthcheck run.',
+    'Itomig:HealthReport:Error:UnknownCategory' => 'Unknown report section.',
+    'Itomig:HealthReport:Error:RunNotFound'     => 'Healthcheck run not found.',
 ));

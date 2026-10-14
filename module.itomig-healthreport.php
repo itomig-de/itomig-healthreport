@@ -28,6 +28,8 @@ SetupWebPage::AddModule(
 			'vendor/autoload.php',
 			'model.itomig-healthreport.php',
 			'src/Controller/HealthReportController.php',
+			// Reiter "Bericht" auf der HealthcheckRun-Detailseite
+			'src/Hook/HealthReportUIExtension.php',
 			// Registriert die Portal-Route der Upload-Brick; wirkt nur,
 			// wenn itop-portal-base installiert ist (siehe Datei selbst).
 			'portal-bootstrap.php',
