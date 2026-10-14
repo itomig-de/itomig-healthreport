@@ -116,7 +116,7 @@
         <field id="zip_datei" xsi:type="AttributeBlob" _delta="define">
           <is_null_allowed>true</is_null_allowed>
         </field>
-        <field id="bericht_json" xsi:type="AttributeText" _delta="define">
+        <field id="bericht_json" xsi:type="AttributeLongText" _delta="define">
           <sql>bericht_json</sql>
           <default_value></default_value>
           <is_null_allowed>true</is_null_allowed>
@@ -146,6 +146,11 @@
                     <item id="pruefsumme_status"><rank>90</rank></item>
                   </items>
                 </item>
+              </items>
+            </item>
+            <item id="col:col2" _delta="define">
+              <rank>20</rank>
+              <items>
                 <item id="fieldset:Class:HealthcheckRun:versionen" _delta="define">
                   <rank>20</rank>
                   <items>
@@ -154,16 +159,10 @@
                     <item id="extension_version"><rank>30</rank></item>
                   </items>
                 </item>
-              </items>
-            </item>
-            <item id="col:col2" _delta="define">
-              <rank>20</rank>
-              <items>
                 <item id="fieldset:Class:HealthcheckRun:dateien" _delta="define">
                   <rank>10</rank>
                   <items>
                     <item id="zip_datei"><rank>10</rank></item>
-                    <item id="bericht_json"><rank>20</rank></item>
                   </items>
                 </item>
               </items>
