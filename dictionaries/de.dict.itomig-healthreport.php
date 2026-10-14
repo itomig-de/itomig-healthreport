@@ -64,10 +64,12 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
     'Class:HealthcheckUpload:auswertung'                   => 'Auswertung',
 
     // Portal - Upload-Brick
-    'Brick:Portal:HealthReportUpload:Title'  => 'Healthcheck hochladen',
-    'Brick:Portal:HealthReportUpload:Title+' => 'ZIP eines Healthcheck-Collector-Laufs hochladen',
+    'Brick:Portal:HealthReportUpload:Title'  => 'Healthcheck',
+    'Brick:Portal:HealthReportUpload:Title+' => 'ZIP eines Healthcheck-Collector-Laufs hochladen und aktuellen Bericht ansehen',
     'Itomig:HealthReport:Portal:Intro'       => 'Hier das ZIP eines Healthcheck-Collector-Laufs hochladen. ITOMIG wertet es aus und meldet sich mit den Ergebnissen.',
     'Itomig:HealthReport:Portal:LastUpload'  => 'Letzter Upload',
+    'Itomig:HealthReport:Portal:LastReport'  => 'Aktueller Bericht',
+    'Itomig:HealthReport:Portal:NoReportYet' => 'Für Ihre Organisation liegt noch kein ausgewerteter Healthcheck vor.',
     'Itomig:HealthReport:Portal:UploadSuccess' => 'Das ZIP wurde erfolgreich hochgeladen und wird von ITOMIG ausgewertet.',
 
     // UI - Eingegangene Uploads (Konsole)

@@ -6,8 +6,9 @@ namespace Itomig\iTop\Extension\HealthReport\Portal\Brick;
 use Combodo\iTop\Portal\Brick\PortalBrick;
 
 /**
- * Portal-Brick "Healthcheck hochladen": zeigt Kunden im Portal ein
- * Upload-Formular fuer ihr Healthcheck-Collector-ZIP.
+ * Portal-Brick "Healthcheck": zeigt Kunden im Portal ein Upload-Formular
+ * fuer ihr Healthcheck-Collector-ZIP sowie den aktuellsten ausgewerteten
+ * Bericht ihrer Organisation.
  *
  * Nimmt das ZIP nur entgegen (HealthcheckUpload, Status "neu") -- die
  * eigentliche Auswertung (ReportPipeline/RunPersister) wird bewusst NICHT

@@ -65,4 +65,14 @@ class ReportRenderer
 
         return $report->onlyCategory($category)->toHtml($linkBuilder(null));
     }
+
+    /**
+     * Minimale HTML-Seite fuer Fehlermeldungen anstelle eines Berichts.
+     */
+    public function renderError(string $sMessage): string
+    {
+        return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><p>'
+            . htmlspecialchars($sMessage, ENT_QUOTES | ENT_HTML5, 'UTF-8')
+            . '</p></body></html>';
+    }
 }

@@ -64,10 +64,12 @@ Dict::Add('FR FR', 'French', 'Français', array(
     'Class:HealthcheckUpload:auswertung'                   => 'Évaluation',
 
     // Portail - Brique d'import
-    'Brick:Portal:HealthReportUpload:Title'  => 'Importer un Healthcheck',
-    'Brick:Portal:HealthReportUpload:Title+' => 'Importer le ZIP d\'une exécution du collecteur Healthcheck',
+    'Brick:Portal:HealthReportUpload:Title'  => 'Healthcheck',
+    'Brick:Portal:HealthReportUpload:Title+' => 'Importer le ZIP d\'une exécution du collecteur Healthcheck et consulter le dernier rapport',
     'Itomig:HealthReport:Portal:Intro'       => 'Importez ici le ZIP d\'une exécution du collecteur Healthcheck. ITOMIG l\'évaluera et reviendra vers vous avec les résultats.',
     'Itomig:HealthReport:Portal:LastUpload'  => 'Dernier import',
+    'Itomig:HealthReport:Portal:LastReport'  => 'Dernier rapport',
+    'Itomig:HealthReport:Portal:NoReportYet' => 'Aucun Healthcheck évalué n\'est encore disponible pour votre organisation.',
     'Itomig:HealthReport:Portal:UploadSuccess' => 'Le ZIP a été importé avec succès et sera évalué par ITOMIG.',
 
     // UI - Imports en attente (console)

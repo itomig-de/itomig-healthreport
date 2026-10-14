@@ -64,10 +64,12 @@ Dict::Add('EN US', 'English', 'English', array(
     'Class:HealthcheckUpload:auswertung'                   => 'Evaluation',
 
     // Portal - Upload brick
-    'Brick:Portal:HealthReportUpload:Title'  => 'Upload Healthcheck',
-    'Brick:Portal:HealthReportUpload:Title+' => 'Upload a Healthcheck collector run ZIP',
+    'Brick:Portal:HealthReportUpload:Title'  => 'Healthcheck',
+    'Brick:Portal:HealthReportUpload:Title+' => 'Upload a Healthcheck collector run ZIP and view the latest report',
     'Itomig:HealthReport:Portal:Intro'       => 'Upload the ZIP of a Healthcheck collector run here. ITOMIG will evaluate it and get in touch with the results.',
     'Itomig:HealthReport:Portal:LastUpload'  => 'Last Upload',
+    'Itomig:HealthReport:Portal:LastReport'  => 'Latest Report',
+    'Itomig:HealthReport:Portal:NoReportYet' => 'No evaluated Healthcheck is available for your organization yet.',
     'Itomig:HealthReport:Portal:UploadSuccess' => 'The ZIP was uploaded successfully and will be evaluated by ITOMIG.',
 
     // UI - Pending uploads (console)

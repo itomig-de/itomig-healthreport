@@ -4,13 +4,18 @@ declare(strict_types=1);
 namespace Itomig\iTop\Extension\HealthReport\Portal\Controller;
 
 use Combodo\iTop\Portal\Brick\BrickCollection;
+use Combodo\iTop\Portal\Brick\BrickNotFoundException;
 use Combodo\iTop\Portal\Controller\BrickController;
 use DBObjectSearch;
 use DBObjectSet;
 use Dict;
+use HealthcheckRun;
 use HealthcheckUpload;
+use Itomig\iTop\Extension\HealthReport\Portal\Brick\HealthReportUploadBrick;
+use Itomig\iTop\Extension\HealthReport\Service\ReportRenderer;
 use Itomig\iTop\Extension\HealthReport\Service\ZipUploadValidator;
 use ormDocument;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -43,10 +48,10 @@ class HealthReportUploadBrickController extends BrickController
      */
     public function DisplayAction(Request $oRequest, $sBrickId)
     {
-        $oBrickCollection = $this->oBrickCollection ?? $this->get('brick_collection');
-        $oBrick = $oBrickCollection->GetBrickById($sBrickId);
+        $oBrick = $this->getBrick($sBrickId);
 
         $iOrgId = $this->getCurrentUserOrgId();
+        $oLastRun = $iOrgId > 0 ? $this->getLastRun($iOrgId) : null;
 
         $aData = [
             'oBrick'         => $oBrick,
@@ -57,9 +62,57 @@ class HealthReportUploadBrickController extends BrickController
             'sMessage'       => (string) $oRequest->get('msg', ''),
             'sErrorMessage'  => (string) $oRequest->get('err', ''),
             'aLastUpload'    => $iOrgId > 0 ? $this->getLastUpload($iOrgId) : null,
+            'aLastRun'       => $oLastRun !== null ? [
+                'zeitpunkt'  => (string) $oLastRun->Get('zeitpunkt'),
+                'report_url' => $this->generateUrl('p_healthreport_upload_report', ['sBrickId' => $sBrickId]),
+            ] : null,
         ];
 
         return $this->render($oBrick->GetPageTemplatePath(), $aData);
+    }
+
+    /**
+     * Liefert den aktuellsten Bericht der eigenen Organisation als
+     * eigenstaendiges HTML (GET) - wird per iframe in die Brick-Seite
+     * eingebettet. Ohne Query-Parameter "category" die Management-Summary,
+     * sonst die Detailansicht der Kategorie.
+     *
+     * Zugriff: nur ueber eine fuer das Profil freigegebene Brick (getBrick())
+     * und nur auf Laeufe der eigenen Organisation (getLastRun()).
+     */
+    public function ReportAction(Request $oRequest, $sBrickId)
+    {
+        $this->getBrick($sBrickId);
+        $oRenderer = new ReportRenderer();
+
+        $iOrgId = $this->getCurrentUserOrgId();
+        if ($iOrgId <= 0) {
+            return $this->reportResponse(403, $oRenderer->renderError(Dict::S('Itomig:HealthReport:Error:NoOrganization')));
+        }
+
+        $oRun = $this->getLastRun($iOrgId);
+        if ($oRun === null) {
+            return $this->reportResponse(404, $oRenderer->renderError(Dict::S('Itomig:HealthReport:Error:NoReport')));
+        }
+
+        $sCategory = (string) $oRequest->query->get('category', '');
+
+        try {
+            $sHtml = $oRenderer->render(
+                (string) $oRun->Get('bericht_json'),
+                $sCategory !== '' ? $sCategory : null,
+                fn(?string $sLinkCategory): string => $this->generateUrl(
+                    'p_healthreport_upload_report',
+                    $sLinkCategory !== null
+                        ? ['sBrickId' => $sBrickId, 'category' => $sLinkCategory]
+                        : ['sBrickId' => $sBrickId]
+                )
+            );
+
+            return $this->reportResponse(200, $sHtml);
+        } catch (RuntimeException $e) {
+            return $this->reportResponse(400, $oRenderer->renderError($e->getMessage()));
+        }
     }
 
     /**
@@ -121,6 +174,48 @@ class HealthReportUploadBrickController extends BrickController
             'dateiname'      => (string) $oUpload->Get('dateiname'),
             'status'         => (string) $oUpload->Get('status'),
         ];
+    }
+
+    /**
+     * Liefert den aktuellsten HealthcheckRun der Organisation oder null.
+     *
+     * Portal-Profile haben bewusst keine Leserechte auf HealthcheckRun (die
+     * Klasse bleibt admin-only). Deshalb wird hier nach der Pruefung der
+     * eigenen Organisation gezielt mit AllowAllData() gelesen - die
+     * Einschraenkung auf kunde_id = Organisation des Kontakts ersetzt den
+     * fehlenden Portal-Scope.
+     */
+    private function getLastRun(int $iOrgId): ?HealthcheckRun
+    {
+        $oSearch = DBObjectSearch::FromOQL('SELECT HealthcheckRun WHERE kunde_id = :org_id');
+        $oSearch->AllowAllData();
+        $oSet = new DBObjectSet($oSearch, ['zeitpunkt' => false], ['org_id' => $iOrgId]);
+        $oSet->SetLimit(1);
+
+        $oRun = $oSet->Fetch();
+
+        return $oRun instanceof HealthcheckRun ? $oRun : null;
+    }
+
+    /**
+     * Loest die Brick ueber die BrickCollection auf. Diese enthaelt nur Bricks,
+     * die fuer die Profile des angemeldeten Nutzers freigegeben sind - sonst
+     * BrickNotFoundException.
+     */
+    private function getBrick(string $sBrickId): HealthReportUploadBrick
+    {
+        $oBrickCollection = $this->oBrickCollection ?? $this->get('brick_collection');
+        $oBrick = $oBrickCollection->GetBrickById($sBrickId);
+        if (!$oBrick instanceof HealthReportUploadBrick) {
+            throw new BrickNotFoundException('Brick with id = "' . $sBrickId . '" is not a Healthcheck upload brick.');
+        }
+
+        return $oBrick;
+    }
+
+    private function reportResponse(int $iStatus, string $sHtml): Response
+    {
+        return new Response($sHtml, $iStatus, ReportRenderer::SECURITY_HEADERS);
     }
 
     /**

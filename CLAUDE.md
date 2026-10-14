@@ -39,16 +39,16 @@ itomig-healthreport-extension/            # = iTop-Modul-Wurzel (itop/extensions
 │   ├── Controller/HealthReportController.php  # Route itomig_healthreport.{show_form,upload,pending_uploads,process_upload,show_report}
 │   ├── Hook/HealthReportUIExtension.php  # Reiter "Bericht" (iframe auf show_report) an der HealthcheckRun-Detailseite
 │   ├── Portal/
-│   │   ├── Brick/HealthReportUploadBrick.php       # Portal-Brick "Healthcheck hochladen"
-│   │   ├── Router/HealthReportPortalRouter.php     # Registriert die Portal-Route (ItopExtensionsExtraRoutes)
-│   │   └── Controller/HealthReportUploadBrickController.php  # Portal-Upload (nur Ablage, keine Auswertung)
+│   │   ├── Brick/HealthReportUploadBrick.php       # Portal-Brick "Healthcheck" (Upload + aktueller Bericht)
+│   │   ├── Router/HealthReportPortalRouter.php     # Registriert die Portal-Routen (ItopExtensionsExtraRoutes)
+│   │   └── Controller/HealthReportUploadBrickController.php  # Portal-Upload (nur Ablage) + Anzeige des aktuellsten Berichts
 │   └── Service/
 │       ├── ReportPipeline.php            # Adapter: bindet lib/reporters/tools ein, liefert Ergebnis-Array
-│       ├── ReportRenderer.php            # Rendert bericht_json zur Anzeigezeit als HTML (Konsole, kuenftig Portal)
+│       ├── ReportRenderer.php            # Rendert bericht_json zur Anzeigezeit als HTML (Konsole + Portal)
 │       ├── RunPersister.php              # Persistiert das Ergebnis als HealthcheckRun (bericht_json)
 │       ├── UploadProcessor.php           # Wertet einen HealthcheckUpload nachtraeglich aus (Konsole)
 │       └── ZipUploadValidator.php        # Gemeinsame Upload-Validierung (Konsole + Portal)
-├── portal/templates/upload.html.twig     # Portal-Seite der Upload-Brick (Bootstrap 3, kein ibo-*)
+├── portal/templates/upload.html.twig     # Portal-Seite der Upload-Brick inkl. Bericht-iframe (Bootstrap 3, kein ibo-*)
 ├── portal-bootstrap.php                  # Bindet die Portal-Route ein, nur falls itop-portal-base installiert ist
 ├── lib/
 │   ├── HealthcheckReport.php             # Findings, Ampel, HTML (toHtml + toHtmlManagementSummary)
@@ -131,7 +131,7 @@ Controller-Konstruktor) liefert eigenständiges HTML ohne iTop-Seitenrahmen aus:
 
 ### Portal-Upload durch Kunden
 
-Zusaetzlich zum Konsolen-Upload gibt es eine Portal-Brick "Healthcheck hochladen"
+Zusaetzlich zum Konsolen-Upload gibt es eine Portal-Brick "Healthcheck"
 (`src/Portal/Brick/HealthReportUploadBrick.php`, Route `p_healthreport_upload`), über die
 Kunden ihr ZIP selbst hochladen koennen. Wichtig: **der Portal-Upload triggert die Auswertung
 bewusst NICHT automatisch** — er legt nur ein `HealthcheckUpload`-Objekt (Status `neu`) mit
@@ -152,15 +152,23 @@ ohne Portal bleibt die Extension unveraendert nutzbar. Rechte: `HealthcheckUploa
 einzige Portal-sichtbare Teil der Extension (`user_rights` gewaehrt Profil `2`/"Portal user"
 Lese-/Schreibrechte darauf); `HealthcheckRun` bleibt admin-only.
 
-**Ausblick (noch nicht umgesetzt):** Anzeige des aktuellsten Berichts im Portal per iframe.
-Dafür eine **eigene** Portal-Route + Portal-Controller anlegen (die Konsolen-Route
-`show_report` ist admin-only und prüft keine Organisation): Organisation des Kontakts ermitteln
-(wie `getCurrentUserOrgId()`), `SELECT HealthcheckRun WHERE kunde_id = :org` absteigend nach
-`zeitpunkt` mit `SetLimit(1)` laden (Portal-Profile haben keine Leserechte auf
-`HealthcheckRun` — erst Org prüfen, dann gezielt lesen), mit demselben `ReportRenderer`
-rendern (Link-Builder über `generateUrl()`) und als Symfony-`Response` mit
-`ReportRenderer::SECURITY_HEADERS` ausliefern. Vorher inhaltlich klären, ob alle Befunde
-kundentauglich sind.
+### Bericht im Portal
+
+Die Upload-Brick zeigt unter „Aktueller Bericht“ den jüngsten ausgewerteten Bericht der eigenen
+Organisation vollständig (Summary + alle Detailansichten) per iframe an. Das iframe lädt die
+eigene Portal-Route `p_healthreport_upload_report` (`/healthreport/upload/{sBrickId}/report`,
+optional `?category=<key>`) → `HealthReportUploadBrickController::ReportAction()`. Die
+Konsolen-Route `show_report` wird bewusst **nicht** mitbenutzt (admin-only, keine Org-Prüfung).
+
+- Brick-Zugriff: `getBrick()` löst die Brick über die `BrickCollection` auf, die nur für die
+  Profile des Nutzers freigegebene Bricks enthält — die Route erbt so die Rechte der Brick.
+- Org-Prüfung: `getLastRun()` lädt `SELECT HealthcheckRun WHERE kunde_id = :org_id`
+  (Organisation des Kontakts, jüngster `zeitpunkt`, `SetLimit(1)`) mit `AllowAllData()`, da
+  Portal-Profile keine Leserechte auf `HealthcheckRun` haben. Die Einschränkung auf die eigene
+  Organisation ersetzt den fehlenden Portal-Scope — **beim Ändern dieser Query unbedingt
+  beibehalten.**
+- Rendering über denselben `ReportRenderer` (Link-Builder über `generateUrl()`), Antwort als
+  Symfony-`Response` mit `ReportRenderer::SECURITY_HEADERS`.
 
 ### Wichtige Namens-Kollision
 

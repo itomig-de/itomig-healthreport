@@ -216,20 +216,21 @@ class HealthReportController extends Controller
         $iRunId = (int) utils::ReadParam('id', 0, false, 'integer');
         $sCategory = (string) utils::ReadParam('category', '', false, 'raw_data');
 
+        $oRenderer = new ReportRenderer();
         $oRun = $iRunId > 0 ? \MetaModel::GetObject('HealthcheckRun', $iRunId, false) : null;
         if ($oRun === null) {
-            $this->sendReportResponse(404, $this->renderReportError(\Dict::S('Itomig:HealthReport:Error:RunNotFound')));
+            $this->sendReportResponse(404, $oRenderer->renderError(\Dict::S('Itomig:HealthReport:Error:RunNotFound')));
         }
 
         try {
-            $sHtml = (new ReportRenderer())->render(
+            $sHtml = $oRenderer->render(
                 (string) $oRun->Get('bericht_json'),
                 $sCategory !== '' ? $sCategory : null,
                 fn(?string $sLinkCategory): string => $this->getReportUrl($iRunId, $sLinkCategory)
             );
             $this->sendReportResponse(200, $sHtml);
         } catch (\RuntimeException $e) {
-            $this->sendReportResponse(400, $this->renderReportError($e->getMessage()));
+            $this->sendReportResponse(400, $oRenderer->renderError($e->getMessage()));
         }
     }
 
@@ -241,13 +242,6 @@ class HealthReportController extends Controller
         }
 
         return $sUrl;
-    }
-
-    private function renderReportError(string $sMessage): string
-    {
-        return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><p>'
-            . utils::EscapeHtml($sMessage)
-            . '</p></body></html>';
     }
 
     private function sendReportResponse(int $iStatus, string $sHtml): never
