@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Registriert die Portal-Route der Healthreport-Upload-Brick.
+ * Registriert die Portal-Routen der Healthreport-Upload-Brick (Formular,
+ * Upload, Anzeige des aktuellsten Berichts der eigenen Organisation).
  *
  * Wird NICHT autogeladen (anderer Namespace-Kontext als das Standard-PSR-4
  * Mapping fuer Bricks), sondern explizit ueber portal-bootstrap.php
@@ -22,6 +23,11 @@ ItopExtensionsExtraRoutes::AddRoutes(
             'pattern'  => '/healthreport/upload/{sBrickId}/submit',
             'callback' => 'Itomig\\iTop\\Extension\\HealthReport\\Portal\\Controller\\HealthReportUploadBrickController::SubmitAction',
             'bind'     => 'p_healthreport_upload_submit',
+        ),
+        array(
+            'pattern'  => '/healthreport/upload/{sBrickId}/report',
+            'callback' => 'Itomig\\iTop\\Extension\\HealthReport\\Portal\\Controller\\HealthReportUploadBrickController::ReportAction',
+            'bind'     => 'p_healthreport_upload_report',
         ),
     )
 );

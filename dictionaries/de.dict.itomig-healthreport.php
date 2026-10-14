@@ -25,6 +25,9 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
     'Class:HealthcheckRun/Attribute:zip_kunde_name'      => 'Kunde laut ZIP',
     'Class:HealthcheckRun/Attribute:zip_customer_url'    => 'App-Root-URL laut ZIP',
     'Class:HealthcheckRun/Attribute:zip_instance_id'     => 'Instanz-ID laut ZIP',
+    'Class:HealthcheckRun/Attribute:pruefsumme_status'   => 'Prüfsumme',
+    'Class:HealthcheckRun/Attribute:pruefsumme_status/Value:geprueft'       => 'Geprüft',
+    'Class:HealthcheckRun/Attribute:pruefsumme_status/Value:nicht_geprueft' => 'Nicht geprüft (Alt-Collector-ZIP)',
     'Class:HealthcheckRun/Attribute:umgebung'            => 'Umgebung',
     'Class:HealthcheckRun/Attribute:zeitpunkt'           => 'Zeitpunkt',
     'Class:HealthcheckRun/Attribute:itop_version'        => 'iTop-Version',
@@ -36,28 +39,12 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
     'Class:HealthcheckRun/Attribute:ampel_gesamt/Value:gruen' => 'Grün',
     'Class:HealthcheckRun/Attribute:modul_anzahl'        => 'Anzahl ausgewerteter Module',
     'Class:HealthcheckRun/Attribute:zip_datei'           => 'Original-ZIP',
-    'Class:HealthcheckRun/Attribute:summary_html'        => 'Management-Summary (HTML)',
-    'Class:HealthcheckRun/Attribute:summary_json'        => 'Management-Summary (JSON)',
-    'Class:HealthcheckRun/Attribute:modul_reports'       => 'Modul-Reports',
+    'Class:HealthcheckRun/Attribute:bericht_json'        => 'Gesamtbericht (JSON)',
+    'Class:HealthcheckRun:Tab:Report'                    => 'Bericht',
+    'Class:HealthcheckRun:Tab:Report:OpenInNewWindow'    => 'In neuem Fenster öffnen',
     'Class:HealthcheckRun:context'                       => 'Kontext',
     'Class:HealthcheckRun:versionen'                      => 'Versionen',
     'Class:HealthcheckRun:dateien'                        => 'Dateien',
-
-    // Class: HealthcheckModuleReport
-    'Class:HealthcheckModuleReport'                      => 'Healthcheck-Modul-Report',
-    'Class:HealthcheckModuleReport+'                     => 'Der ausgewertete Report eines einzelnen Healthcheck-Moduls innerhalb eines Laufs',
-    'Class:HealthcheckModuleReport/Attribute:run_id'             => 'Healthcheck-Lauf',
-    'Class:HealthcheckModuleReport/Attribute:kategorie'          => 'Kategorie',
-    'Class:HealthcheckModuleReport/Attribute:label'              => 'Bezeichnung',
-    'Class:HealthcheckModuleReport/Attribute:ampel'              => 'Ampel',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:rot'    => 'Rot',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:gelb'   => 'Gelb',
-    'Class:HealthcheckModuleReport/Attribute:ampel/Value:gruen'  => 'Grün',
-    'Class:HealthcheckModuleReport/Attribute:befund_anzahl'      => 'Anzahl Befunde',
-    'Class:HealthcheckModuleReport/Attribute:report_html'        => 'Detail-Report (HTML)',
-    'Class:HealthcheckModuleReport/Attribute:report_json'        => 'Detail-Report (JSON)',
-    'Class:HealthcheckModuleReport:info'                         => 'Informationen',
-    'Class:HealthcheckModuleReport:dateien'                      => 'Dateien',
 
     // Class: HealthcheckUpload
     'Class:HealthcheckUpload'                      => 'Healthcheck-Upload',
@@ -77,10 +64,12 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
     'Class:HealthcheckUpload:auswertung'                   => 'Auswertung',
 
     // Portal - Upload-Brick
-    'Brick:Portal:HealthReportUpload:Title'  => 'Healthcheck hochladen',
-    'Brick:Portal:HealthReportUpload:Title+' => 'ZIP eines Healthcheck-Collector-Laufs hochladen',
+    'Brick:Portal:HealthReportUpload:Title'  => 'Healthcheck',
+    'Brick:Portal:HealthReportUpload:Title+' => 'ZIP eines Healthcheck-Collector-Laufs hochladen und aktuellen Bericht ansehen',
     'Itomig:HealthReport:Portal:Intro'       => 'Hier das ZIP eines Healthcheck-Collector-Laufs hochladen. ITOMIG wertet es aus und meldet sich mit den Ergebnissen.',
-    'Itomig:HealthReport:Portal:OwnUploads'  => 'Meine Uploads',
+    'Itomig:HealthReport:Portal:LastUpload'  => 'Letzter Upload',
+    'Itomig:HealthReport:Portal:LastReport'  => 'Aktueller Bericht',
+    'Itomig:HealthReport:Portal:NoReportYet' => 'Für Ihre Organisation liegt noch kein ausgewerteter Healthcheck vor.',
     'Itomig:HealthReport:Portal:UploadSuccess' => 'Das ZIP wurde erfolgreich hochgeladen und wird von ITOMIG ausgewertet.',
 
     // UI - Eingegangene Uploads (Konsole)
@@ -111,4 +100,7 @@ Dict::Add('DE DE', 'German', 'Deutsch', array(
     'Itomig:HealthReport:Error:UploadNotFound' => 'Upload nicht gefunden.',
     'Itomig:HealthReport:Error:UploadAlreadyProcessed' => 'Dieser Upload wurde bereits ausgewertet.',
     'Itomig:HealthReport:Error:TempFileFailed' => 'Temporäre Datei zur Verarbeitung konnte nicht angelegt werden.',
+    'Itomig:HealthReport:Error:NoReport'        => 'Zu diesem Healthcheck-Lauf liegt kein Bericht vor.',
+    'Itomig:HealthReport:Error:UnknownCategory' => 'Unbekannter Berichtsbereich.',
+    'Itomig:HealthReport:Error:RunNotFound'     => 'Healthcheck-Lauf nicht gefunden.',
 ));

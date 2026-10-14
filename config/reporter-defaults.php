@@ -28,6 +28,8 @@ return [
         'integration_analysis' => true,
         'system_analysis'      => true,
         'privacy_analysis'     => true,
+        'background_tasks_analysis' => true,
+        'error_log_analysis'   => true,
         'table_overview'       => true,
         'column_fill'          => true,
         'object_freshness'     => true,

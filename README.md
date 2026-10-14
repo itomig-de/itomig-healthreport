@@ -12,7 +12,7 @@ Kunde (iTop)                   ITOMIG (iTop mit dieser Extension)
 ─────────────                  ───────────────────────────────────
 itomig-healthcheck              itomig-healthreport
 └─ Collector                    ├─ Menü "Healthcheck" → Upload-Formular (Admin)
-   (PHP-Extension im iTop)      │  oder Portal-Brick "Healthcheck hochladen" (Kunde)
+   (PHP-Extension im iTop)      │  oder Portal-Brick "Healthcheck" (Kunde)
    schreibt JSON-Rohdaten       ├─ HealthReportController → ReportPipeline
    und packt sie ins ZIP        │  (bindet lib/reporters/tools ein)
         │                       └─ RunPersister → HealthcheckRun + HealthcheckModuleReport
@@ -78,12 +78,13 @@ vor und werden über den nativen iTop-Dokumenten-Viewer angezeigt.
 ### Portal-Upload durch Kunden
 
 Ist `itop-portal-base` installiert, erscheint im Kundenportal zusätzlich eine Brick
-„Healthcheck hochladen". Kunden können dort ihr Collector-ZIP selbst hochladen — es wird
+„Healthcheck". Kunden können dort ihr Collector-ZIP selbst hochladen — es wird
 lediglich als `HealthcheckUpload` (Status „Neu") abgelegt, **die Auswertung startet bewusst
 nicht automatisch**. ITOMIG sichtet eingegangene Uploads in der Konsole unter „Eingegangene
 Uploads" und stößt die Auswertung dort gezielt an; danach entsteht wie beim Admin-Upload ein
 `HealthcheckRun`, und der Upload wird mit Status „Ausgewertet" verknüpft (oder „Fehler" bei
-einer fehlgeschlagenen Auswertung).
+einer fehlgeschlagenen Auswertung). In derselben Brick sehen Kunden unter „Aktueller Bericht"
+den jüngsten ausgewerteten Bericht ihrer Organisation.
 
 Ohne installiertes Portal bleibt die Extension unverändert nutzbar — die Portal-Bestandteile
 schalten sich nur zu, wenn `itop-portal-base` vorhanden ist.

@@ -2,7 +2,7 @@
 /**
  * ITOMIG Healthcheck - Modul-Registry
  *
- * Zentrale Auflistung aller 9 Module mit Tier, Config-Flag, Reporter-Datei
+ * Zentrale Auflistung aller 11 Module mit Tier, Config-Flag, Reporter-Datei
  * und Kategorie-Key. Die Collectoren leben in der iTop-Extension
  * itomig-healthcheck — diese Registry wird nur noch von der Reporter-Pipeline
  * konsumiert (import-zip + report-from-zip + reporters/report-all).
@@ -73,6 +73,22 @@ class HealthcheckModules
                 'category'      => 'privacy',
                 'reporter_file' => $root . '/reporters/rest/privacy-reporter.php',
                 'reporter_fn'   => 'reportPrivacy',
+            ],
+            'background-tasks' => [
+                'tier'          => 'rest',
+                'flag'          => 'background_tasks_analysis',
+                'label'         => 'Hintergrund-Jobs',
+                'category'      => 'background-tasks',
+                'reporter_file' => $root . '/reporters/rest/background-tasks-reporter.php',
+                'reporter_fn'   => 'reportBackgroundTasks',
+            ],
+            'error-log' => [
+                'tier'          => 'rest',
+                'flag'          => 'error_log_analysis',
+                'label'         => 'Error-Log',
+                'category'      => 'error-log',
+                'reporter_file' => $root . '/reporters/rest/error-log-reporter.php',
+                'reporter_fn'   => 'reportErrorLog',
             ],
             'table-overview' => [
                 'tier'          => 'db',

@@ -5,7 +5,7 @@
 
 SetupWebPage::AddModule(
 	__FILE__, // Path to the current file, all other file names are relative to the directory containing this file
-	'itomig-healthreport/26.3.0',
+	'itomig-healthreport/26.3.1',
 	array(
 		// Identification
 		//
@@ -28,6 +28,8 @@ SetupWebPage::AddModule(
 			'vendor/autoload.php',
 			'model.itomig-healthreport.php',
 			'src/Controller/HealthReportController.php',
+			// Reiter "Bericht" auf der HealthcheckRun-Detailseite
+			'src/Hook/HealthReportUIExtension.php',
 			// Registriert die Portal-Route der Upload-Brick; wirkt nur,
 			// wenn itop-portal-base installiert ist (siehe Datei selbst).
 			'portal-bootstrap.php',

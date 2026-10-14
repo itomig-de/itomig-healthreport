@@ -6,8 +6,8 @@ Guidance für Claude Code (claude.ai/code) bei Arbeit in diesem Repository.
 
 ITOMIG-interne Reporter-Pipeline für Healthcheck-ZIPs, verpackt als installierbare
 **iTop-Extension** (`itomig-healthreport`). Nimmt das Collector-ZIP aus der iTop-Extension
-`itomig-healthcheck` entgegen, wertet es aus und speichert das Ergebnis als iTop-Objekte
-(`HealthcheckRun` + `HealthcheckModuleReport`). Kein externer Webserver, keine externe DB,
+`itomig-healthcheck` entgegen, wertet es aus und speichert das Ergebnis als iTop-Objekt
+(`HealthcheckRun`). Kein externer Webserver, keine externe DB,
 keine API-Calls — die Auswertung läuft direkt im iTop der ITOMIG. PHP 8.1+, nur Builtins
 (`json`, `zip`).
 
@@ -15,8 +15,10 @@ keine API-Calls — die Auswertung läuft direkt im iTop der ITOMIG. PHP 8.1+, n
 oder wahlweise über eine Portal-Brick, mit der Kunden ihr ZIP selbst hochladen (nur Ablage als
 `HealthcheckUpload`, Auswertung wird separat in der Konsole angestoßen — siehe „Portal-Upload
 durch Kunden" weiter unten)
-**Ausgang:** `HealthcheckRun`-Objekt (Management-Summary + Original-ZIP als Blob) mit
-verknüpften `HealthcheckModuleReport`-Objekten (ein Detail-Report pro Modul, ebenfalls als Blob)
+**Ausgang:** `HealthcheckRun`-Objekt mit der gesamten Auswertung (Management-Summary + alle
+Modul-Ergebnisse) als **ein** JSON (`bericht_json`) plus dem Original-ZIP als Blob. Keine
+HTML-Datei wird persistiert — die HTML-Darstellung wird zur Anzeigezeit aus `bericht_json`
+gerendert (Reiter „Bericht“ am Run bzw. Route `itomig_healthreport.show_report`, Issue #2).
 
 Die Kern-Auswertungslogik (`lib/`, `reporters/`, `tools/import-zip.php`) ist bewusst
 iTop-unabhängig geblieben (globale Klassen/Funktionen, kein Namespace) und wird vom
@@ -27,24 +29,26 @@ iTop-Controller zur Laufzeit per `require_once` eingebunden — siehe „iTop-Ex
 ```
 itomig-healthreport-extension/            # = iTop-Modul-Wurzel (itop/extensions/itomig-healthreport/)
 ├── module.itomig-healthreport.php        # iTop-Modul-Definition (SetupWebPage::AddModule)
-├── datamodel.itomig-healthreport.xml     # Klassen HealthcheckRun/HealthcheckModuleReport, Menüs
+├── datamodel.itomig-healthreport.xml     # Klassen HealthcheckRun/HealthcheckUpload, Menüs
 ├── model.itomig-healthreport.php         # Auto-generiert bei Compile, nicht editieren
 ├── composer.json                         # PSR-4: Itomig\iTop\Extension\HealthReport\ -> src/
 ├── vendor/                                # Composer-Autoload, MUSS committed sein (kein composer install auf Ziel-iTop)
 ├── dictionaries/{de,en,fr}.dict.itomig-healthreport.php
 ├── templates/UploadForm.html.twig        # Upload-Formular (Twig, ibo-*/UI*-Makros)
 ├── src/
-│   ├── Controller/HealthReportController.php  # Route itomig_healthreport.{show_form,upload,pending_uploads,process_upload}
+│   ├── Controller/HealthReportController.php  # Route itomig_healthreport.{show_form,upload,pending_uploads,process_upload,show_report}
+│   ├── Hook/HealthReportUIExtension.php  # Reiter "Bericht" (iframe auf show_report) an der HealthcheckRun-Detailseite
 │   ├── Portal/
-│   │   ├── Brick/HealthReportUploadBrick.php       # Portal-Brick "Healthcheck hochladen"
-│   │   ├── Router/HealthReportPortalRouter.php     # Registriert die Portal-Route (ItopExtensionsExtraRoutes)
-│   │   └── Controller/HealthReportUploadBrickController.php  # Portal-Upload (nur Ablage, keine Auswertung)
+│   │   ├── Brick/HealthReportUploadBrick.php       # Portal-Brick "Healthcheck" (Upload + aktueller Bericht)
+│   │   ├── Router/HealthReportPortalRouter.php     # Registriert die Portal-Routen (ItopExtensionsExtraRoutes)
+│   │   └── Controller/HealthReportUploadBrickController.php  # Portal-Upload (nur Ablage) + Anzeige des aktuellsten Berichts
 │   └── Service/
 │       ├── ReportPipeline.php            # Adapter: bindet lib/reporters/tools ein, liefert Ergebnis-Array
-│       ├── RunPersister.php              # Persistiert das Ergebnis als HealthcheckRun/-ModuleReport
+│       ├── ReportRenderer.php            # Rendert bericht_json zur Anzeigezeit als HTML (Konsole + Portal)
+│       ├── RunPersister.php              # Persistiert das Ergebnis als HealthcheckRun (bericht_json)
 │       ├── UploadProcessor.php           # Wertet einen HealthcheckUpload nachtraeglich aus (Konsole)
 │       └── ZipUploadValidator.php        # Gemeinsame Upload-Validierung (Konsole + Portal)
-├── portal/templates/upload.html.twig     # Portal-Seite der Upload-Brick (Bootstrap 3, kein ibo-*)
+├── portal/templates/upload.html.twig     # Portal-Seite der Upload-Brick inkl. Bericht-iframe (Bootstrap 3, kein ibo-*)
 ├── portal-bootstrap.php                  # Bindet die Portal-Route ein, nur falls itop-portal-base installiert ist
 ├── lib/
 │   ├── HealthcheckReport.php             # Findings, Ampel, HTML (toHtml + toHtmlManagementSummary)
@@ -101,17 +105,33 @@ Nach dem Deploy erscheint das Menü **„Healthcheck"** (nur für Admins sichtba
    `APPROOT/data/itomig-healthreport/{daten,auswertung}` umgebogen; `HealthcheckUtils::log()`
    wird per Output-Buffering geschluckt (die Engine `echo`t unbedingt und hat keinen
    injizierbaren Logger).
-4. `RunPersister::persist()` legt ein `HealthcheckRun`-Objekt an (Kunde/Umgebung/Ampel +
-   Original-ZIP und Summary als `AttributeBlob`) und je Modul ein verknüpftes
-   `HealthcheckModuleReport`-Objekt (Detail-HTML/JSON als Blob).
+4. `RunPersister::persist()` legt ein `HealthcheckRun`-Objekt an (Kunde/Umgebung/Ampel,
+   Original-ZIP als `AttributeBlob` sowie die gesamte Auswertung — Management-Summary + alle
+   Modul-Ergebnisse — als **ein** JSON im Feld `bericht_json`, `AttributeLongText` — `AttributeText` ist auf 64 KB begrenzt und reicht für reale Läufe nicht). Es gibt keine
+   separaten Modul-Report-Objekte und keine persistierte HTML-Datei mehr (Issue #8).
 5. Redirect auf die native iTop-Detailseite des neuen `HealthcheckRun`
-   (`pages/UI.php?operation=details&class=HealthcheckRun&id=...`). Report-HTMLs werden dort
-   über iTops eingebauten Blob-Viewer angezeigt (`ormDocument::GetDisplayURL()`,
-   `pages/ajax.render.php?operation=display_document`) — kein eigener Streaming-Code nötig.
+   (`pages/UI.php?operation=details&class=HealthcheckRun&id=...`).
+
+### Anzeige des Berichts
+
+`bericht_json` ist bewusst nicht in der Detailansicht des Runs enthalten (unlesbar, ~200 KB).
+Stattdessen ergänzt `HealthReportUIExtension::OnDisplayRelations()` einen Reiter „Bericht“, der
+per iframe die Route `itomig_healthreport.show_report&id=<run>[&category=<key>]` einbettet
+(plus Link „In neuem Fenster öffnen“). `OperationShowReport()` (admin-only über den
+Controller-Konstruktor) liefert eigenständiges HTML ohne iTop-Seitenrahmen aus:
+
+- `ReportRenderer::render($berichtJson, $category, $linkBuilder)` rekonstruiert den Report per
+  `HealthcheckReport::fromJson()` und nutzt unverändert `toHtmlManagementSummary()` (ohne
+  `category`) bzw. `onlyCategory($key)->toHtml()` (Detailansicht). `category` wird gegen
+  `HealthcheckReport::CATEGORY_LABELS` geprüft.
+- Die Links (Ampel-Karten, „Details →“, „Zurück“) erzeugt ein vom Aufrufer übergebener
+  Link-Builder — der Renderer kennt weder Route noch Zugriffsprüfung.
+- `ReportRenderer::SECURITY_HEADERS` (u. a. CSP ohne Skripte, `frame-ancestors 'self'`,
+  `X-Frame-Options: SAMEORIGIN`) gilt für jede Auslieferung.
 
 ### Portal-Upload durch Kunden
 
-Zusaetzlich zum Konsolen-Upload gibt es eine Portal-Brick "Healthcheck hochladen"
+Zusaetzlich zum Konsolen-Upload gibt es eine Portal-Brick "Healthcheck"
 (`src/Portal/Brick/HealthReportUploadBrick.php`, Route `p_healthreport_upload`), über die
 Kunden ihr ZIP selbst hochladen koennen. Wichtig: **der Portal-Upload triggert die Auswertung
 bewusst NICHT automatisch** — er legt nur ein `HealthcheckUpload`-Objekt (Status `neu`) mit
@@ -130,12 +150,25 @@ eigener Controller (`Combodo\iTop\Portal\Controller\BrickController`). `portal-b
 bindet Autoloader + Router nur ein, wenn `itop-portal-base` tatsaechlich installiert ist —
 ohne Portal bleibt die Extension unveraendert nutzbar. Rechte: `HealthcheckUpload` ist der
 einzige Portal-sichtbare Teil der Extension (`user_rights` gewaehrt Profil `2`/"Portal user"
-Lese-/Schreibrechte darauf); `HealthcheckRun`/`HealthcheckModuleReport` bleiben admin-only.
+Lese-/Schreibrechte darauf); `HealthcheckRun` bleibt admin-only.
 
-**Ausblick (noch nicht umgesetzt):** Anzeige der Auswertungsergebnisse (Management-Summary)
-im Portal ist fuer eine zukuenftige Version vorgesehen — dafuer fehlt aktuell ein
-Portal-Scope auf `HealthcheckRun` (das Feld heisst dort `kunde_id`, nicht `org_id`) sowie eine
-Ausliefer-Route fuer die Blob-Felder.
+### Bericht im Portal
+
+Die Upload-Brick zeigt unter „Aktueller Bericht“ den jüngsten ausgewerteten Bericht der eigenen
+Organisation vollständig (Summary + alle Detailansichten) per iframe an. Das iframe lädt die
+eigene Portal-Route `p_healthreport_upload_report` (`/healthreport/upload/{sBrickId}/report`,
+optional `?category=<key>`) → `HealthReportUploadBrickController::ReportAction()`. Die
+Konsolen-Route `show_report` wird bewusst **nicht** mitbenutzt (admin-only, keine Org-Prüfung).
+
+- Brick-Zugriff: `getBrick()` löst die Brick über die `BrickCollection` auf, die nur für die
+  Profile des Nutzers freigegebene Bricks enthält — die Route erbt so die Rechte der Brick.
+- Org-Prüfung: `getLastRun()` lädt `SELECT HealthcheckRun WHERE kunde_id = :org_id`
+  (Organisation des Kontakts, jüngster `zeitpunkt`, `SetLimit(1)`) mit `AllowAllData()`, da
+  Portal-Profile keine Leserechte auf `HealthcheckRun` haben. Die Einschränkung auf die eigene
+  Organisation ersetzt den fehlenden Portal-Scope — **beim Ändern dieser Query unbedingt
+  beibehalten.**
+- Rendering über denselben `ReportRenderer` (Link-Builder über `generateUrl()`), Antwort als
+  Symfony-`Response` mit `ReportRenderer::SECURITY_HEADERS`.
 
 ### Wichtige Namens-Kollision
 
@@ -210,6 +243,10 @@ Die Kategorie-Keys (`design`, `data`, `synchro`, `integration`, `system`, `priva
   - Ampel-Grid (Karten klickbar wenn `$detailLinks[$category]` gesetzt)
   - Mini-Sektionen mit Counts + „Details →"-Button
   - „Wichtigste Befunde"-Sektion mit `critical` + `warning` aus allen Kategorien
+- `fromJson(string $json)` — Gegenstück zu `toJson()`: baut den Report aus `bericht_json` wieder auf
+  (inkl. ursprünglichem `meta.timestamp`). Unbekannte Kategorien werden ignoriert, unbekannte
+  `severity`-Werte zu `info` normalisiert (severity landet als CSS-Klasse im HTML).
+- `onlyCategory(string $category)` — Kopie mit nur einer Kategorie, Basis der Detailansicht.
 - Bestehende `addFinding()`, `setCategorySummary()`, `toJson()` unverändert.
 
 ## Konfiguration
@@ -240,21 +277,55 @@ Erwartet wird, was die iTop-Extension `itomig-healthcheck` (Collector-Version �
 2.x lieferte noch deutsche Keys (`daten`/`kunde`/`umgebung`/...) und ist mit dieser Reporter-Version
 nicht mehr kompatibel.
 
+Seit Collector-Schema 4.0.0 (≥ Version 26.3.1) haben die Modul-Dateien im ZIP sprechende Namen
+statt `<slug>.json`; die genauen Namen stehen in `manifest.files[]` (siehe unten):
+
 ```
 healthcheck_<host-slug>_<ts>.zip
-├── manifest.json      {customer, environment, app_root_url, db_name, instance_id, itop_version, db_server_version, timestamp, extension_version, modules:[…]}
-├── design.json        {meta:{…}, data:{…}}
-├── data.json
-├── synchro.json
-├── integration.json
-├── system.json
-├── privacy.json
-├── table-overview.json
-├── column-fill.json
-└── object-freshness.json
+├── manifest.json                          {schema_version, customer, environment, app_root_url, db_name, instance_id, itop_version, db_server_version, timestamp, extension_version, modules:[…], files:[…], system_report_included, system_report_files, system_report_error}
+├── 01-datamodel-customizations.json       {meta:{…}, data:{…}}   (Modul design)
+├── 02-data-inventory.json                                        (Modul data)
+├── 03-data-synchronization.json                                  (Modul synchro)
+├── 04-integrations.json                                          (Modul integration)
+├── 05-system-environment.json                                    (Modul system)
+├── 06-privacy.json                                                (Modul privacy)
+├── 07-table-overview.json                                         (Modul table-overview)
+├── 08-column-fill.json                                            (Modul column-fill)
+├── 09-object-freshness.json                                       (Modul object-freshness)
+├── 10-background-tasks.json                                       (Modul background-tasks, neu in 4.0.0)
+└── 11-error-log.json                                              (Modul error-log, neu in 4.0.0)
 ```
 
-Jede Modul-JSON folgt `{meta: {customer, environment, app_root_url, db_name, instance_id, module, tier, timestamp, collector_version, itop_version|db_server_version}, data: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen.
+Jede Modul-JSON folgt `{meta: {customer, environment, app_root_url, db_name, instance_id, module, tier, timestamp, collector_version, itop_version|db_server_version}, data: {<modul-spezifisch>}}`. Schema-Änderungen am Collector erfordern entsprechende Anpassungen an den Reportern hier — Compatibility-Test: das Test-ZIP unter `../test/` einmal durch `tools/import-zip.php` + `reporters/report-all.php` jagen (**Hinweis:** das aktuell abgelegte Test-ZIP ist Schema 2.x und für Schema-4.0.0-Tests unbrauchbar — vor dem nächsten Compatibility-Test ein frisches ZIP aus dem aktuellen Collector-Stand erzeugen).
+
+**Schema-4.0.0-Runde (Collector ≥ 26.3.1):** vier zusammengehörige Änderungen.
+
+1. **Sprechende Dateinamen:** `manifest.files[]` ist eine Liste von
+   `{name, module, sha256, bytes}` — `name` ist der Zip-Eintragsname (z. B.
+   `01-datamodel-customizations.json`), `module` der zugehörige Modul-Slug (`null` bei
+   Nicht-Modul-Dateien wie dem entpackten Systemreport). `tools/import-zip.php` löst den
+   Dateinamen je Modul über `files[]` auf (`resolveFileEntries()`); fehlt `files[]` im
+   Manifest (Alt-Collector-ZIP < 4.0.0), fällt der Import auf das Legacy-Muster `<slug>.json`
+   zurück und prüft keine Prüfsumme.
+2. **Prüfsummen:** `files[].sha256` (SHA-256, Hex, lowercase, über den exakten serialisierten
+   Datei-Inhalt vor dem Schreiben ins ZIP) und `files[].bytes` (Byte-Länge desselben Inhalts)
+   werden beim Import gegen den tatsächlichen ZIP-Inhalt geprüft
+   (`tools/import-zip.php::verifyChecksum()`). Bei Abweichung bricht der Import mit einer
+   Fehlermeldung ab (Modul, erwarteter/tatsächlicher Hash) — mögliches Zeichen für eine
+   nachträgliche Manipulation des ZIPs. Das Ergebnis wird als `HealthcheckRun.pruefsumme_status`
+   (`geprueft`/`nicht_geprueft`) persistiert.
+3. **Entpackter Systemreport:** `system_report_files` (Plural, Liste von Zip-Eintragsnamen)
+   ersetzt das frühere `system_report_filename` (Singular, verschachteltes ZIP).
+4. **Zwei neue Module:** `background-tasks` (laufende/hängende/überfällige Hintergrund-Jobs,
+   Quelle: iTop-Klasse `BackgroundTask`) und `error-log` (Level-Übersicht + wiederkehrende,
+   datenschutzkonform normalisierte Fehlermuster aus `log/error.log`) — Registrierung in
+   `lib/HealthcheckModules.php`, Reporter unter `reporters/rest/background-tasks-reporter.php`
+   und `reporters/rest/error-log-reporter.php`, Kategorien `background-tasks`/`error-log` in
+   `HealthcheckReport::CATEGORY_LABELS`.
+
+`manifest.schema_version` (z. B. `"4.0.0"`) wird beim Import gegen die höchste unterstützte
+Major-Version geprüft (`IMPORT_SUPPORTED_SCHEMA_MAJOR` in `tools/import-zip.php`); fehlt das
+Feld (Alt-ZIP), wird das als kompatibel behandelt.
 
 **Customer/db_name-Runde (2026-08-20, Collector ≥ 26.3.0):** `meta.customer` ist seither die volle
 `app_root_url` der Kundeninstanz (Fallback `db_name`, falls leer) statt des Datenbanknamens —
@@ -277,9 +348,9 @@ kein `items[]` mit Login/Kontakt/Profil mehr), `privacy.inactive_sample` (nur no
 `system.data.itop_version` ist komplett entfallen (war redundant zu `meta.itop_version`, das
 unverändert vorhanden bleibt). Neu verfügbar: `system.data.php.{version,sapi,extensions}` mit
 den echten PHP-Infos des Collector-Laufs. Optional, nicht auszuwerten: das ZIP kann zusätzlich
-eine `system-information-<ts>.zip` (unveränderte Kopie des iTop-„System Information"-Reports)
-enthalten; `manifest.json` bekommt dafür die Felder `system_report_included`,
-`system_report_filename`, `system_report_error` — beim Parsen ignorieren.
+den entpackten iTop-„System Information"-Report enthalten; `manifest.json` bekommt dafür die
+Felder `system_report_included`, `system_report_files` (Plural, seit Schema 4.0.0 — siehe
+Schema-4.0.0-Runde unten), `system_report_error` — beim Parsen ignorieren.
 
 ## Verwandte Repos
 
@@ -295,5 +366,5 @@ enthalten; `manifest.json` bekommt dafür die Felder `system_report_included`,
 
 ## Version
 
-Version: 26.3.0
-Last Updated: 2026-08-20
+Version: 26.3.1
+Last Updated: 2026-08-28
